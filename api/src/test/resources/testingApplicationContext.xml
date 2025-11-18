@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:aop="http://www.springframework.org/schema/aop"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="patientSearchQueryInclude"
-		class="org.openmrs.module.tasks.api.config.TestPatientSearchQueryInclude"/>
+	<bean id="searchQueryInclude" class="org.openmrs.module.tasks.api.config.TestSearchQueryInclude" primary="true"/>
+
+	<bean id="locationTypeTranslator"
+		class="org.openmrs.module.tasks.api.config.TestLocationTypeTranslator"/>
+
+	<bean id="observationReferenceRangeTranslator"
+		class="org.openmrs.module.tasks.api.config.TestObservationReferenceRangeTranslator"/>
 
 	<!-- Mock cacheInterceptor bean required by FHIR2 module -->
 	<bean id="cacheInterceptor" class="org.openmrs.module.tasks.api.config.TestCacheInterceptor"/>
