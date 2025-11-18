@@ -24,8 +24,10 @@ import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Reference;
 import org.openmrs.Patient;
 import org.openmrs.Provider;
+import org.openmrs.User;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.ProviderService;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.fhir2.api.annotations.R4Provider;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.TasksService;
@@ -81,14 +83,17 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 			throw new IllegalArgumentException("Patient reference is required");
 		}
 		
-		// Convert CarePlan to Task
 		Task task = carePlanMapper.toTask(carePlan, context.getPatient(), context.getAssignee(),
 		    context.getAssigneeRoleUuid());
 		
-		// Save task
-		Task savedTask = tasksService.saveTask(task);
+		if (task.getCreator() == null) {
+			User authenticatedUser = Context.getAuthenticatedUser();
+			if (authenticatedUser != null) {
+				task.setCreator(authenticatedUser);
+			}
+		}
 		
-		// Convert back to CarePlan
+		Task savedTask = tasksService.saveTask(task);
 		CarePlan savedCarePlan = carePlanMapper.toCarePlan(savedTask);
 		
 		// Create MethodOutcome

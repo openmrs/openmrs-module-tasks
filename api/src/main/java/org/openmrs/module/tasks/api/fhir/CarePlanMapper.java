@@ -16,15 +16,25 @@ import org.hl7.fhir.r4.model.CarePlan.CarePlanActivityDetailComponent;
 import org.hl7.fhir.r4.model.CarePlan.CarePlanActivityKind;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
+import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Timing;
 import org.hl7.fhir.instance.model.api.IBaseDatatype;
+import org.hl7.fhir.instance.model.api.IIdType;
+import org.openmrs.Encounter;
 import org.openmrs.Patient;
+import org.openmrs.Person;
 import org.openmrs.Provider;
 import org.openmrs.ProviderRole;
+import org.openmrs.User;
+import org.openmrs.Visit;
+import org.openmrs.api.EncounterService;
 import org.openmrs.api.ProviderService;
+import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.tasks.DueDateType;
 import org.openmrs.module.fhir2.api.translators.PatientReferenceTranslator;
 import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Task;
@@ -33,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +59,10 @@ public class CarePlanMapper {
 	private static final Logger log = LoggerFactory.getLogger(CarePlanMapper.class);
 	
 	private static final String PRACTITIONER_ROLE_TYPE = "PractitionerRole";
+	
+	private static final String ENCOUNTER_EXTENSION_URL = "http://hl7.org/fhir/StructureDefinition/encounter-associatedEncounter";
+	
+	private static final String ACTIVITY_DUE_KIND_EXTENSION_URL = "http://openmrs.org/fhir/StructureDefinition/activity-dueKind";
 	
 	private static final Map<CarePlanActivityKind, String> KIND_TO_RESOURCE_TYPE = new EnumMap<>(CarePlanActivityKind.class);
 	
@@ -83,11 +98,22 @@ public class CarePlanMapper {
 		CarePlan carePlan = new CarePlan();
 		
 		carePlan.setId(task.getUuid());
-		carePlan.setStatus(CarePlan.CarePlanStatus.ACTIVE);
+		
+		if (task.getStatus() == CarePlan.CarePlanActivityStatus.COMPLETED) {
+			carePlan.setStatus(CarePlan.CarePlanStatus.COMPLETED);
+		} else {
+			carePlan.setStatus(CarePlan.CarePlanStatus.ACTIVE);
+		}
+		
 		carePlan.setIntent(CarePlan.CarePlanIntent.PLAN);
 		
 		if (task.getPatient() != null) {
 			carePlan.setSubject(patientReferenceTranslator.toFhirResource(task.getPatient()));
+		}
+		
+		Reference authorRef = buildAuthorReference(task.getCreator());
+		if (authorRef != null) {
+			carePlan.setAuthor(authorRef);
 		}
 		
 		CarePlanActivityComponent activity = new CarePlanActivityComponent();
@@ -98,7 +124,9 @@ public class CarePlanMapper {
 		
 		CarePlanActivityDetailComponent detail = new CarePlanActivityDetailComponent();
 		
-		if (task.getStatus() != null) {
+		if (Boolean.TRUE.equals(task.getVoided())) {
+			detail.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		} else if (task.getStatus() != null) {
 			detail.setStatus(task.getStatus());
 		}
 		
@@ -127,10 +155,80 @@ public class CarePlanMapper {
 			}
 		}
 		
-		if (task.getDueDate() != null) {
-			Period period = new Period();
-			period.setEnd(task.getDueDate());
-			detail.setScheduled(period);
+		// Handle due date
+		Period scheduledPeriod = new Period();
+		String dueKindValue = null;
+		
+		if (task.getDueDateType() == DueDateType.DATE && task.getDueDate() != null) {
+			// DATE type: start = end = specific date
+			scheduledPeriod.setStart(task.getDueDate());
+			scheduledPeriod.setEnd(task.getDueDate());
+			dueKindValue = "date";
+		} else if (task.getDueDateType() == DueDateType.THIS_VISIT || task.getDueDateType() == DueDateType.NEXT_VISIT) {
+			// Visit-based types: end = visit end date (when available)
+			dueKindValue = task.getDueDateType() == DueDateType.THIS_VISIT ? "this-visit" : "next-visit";
+			
+			Visit referenceVisit = task.getDueDateReferenceVisit();
+			if (referenceVisit != null) {
+				log.warn("Task {}: Reference visit uuid: {}", task.getDescription(), referenceVisit.getUuid());
+				// Add encounter extension for reference visit
+				if (referenceVisit.getUuid() != null) {
+					Extension encounterExtension = new Extension();
+					encounterExtension.setUrl(ENCOUNTER_EXTENSION_URL);
+					Reference encounterRef = new Reference();
+					encounterRef.setReference("Encounter/" + task.getDueDateReferenceVisit().getUuid());
+					encounterExtension.setValue(encounterRef);
+					detail.addExtension(encounterExtension);
+				}
+
+				log.warn("Task {}: Reference visit start date: {}", task.getDescription(), referenceVisit.getStartDatetime());
+				// Set start to visit start date (or task creation date if visit start not available)
+				Date visitStartDate = referenceVisit.getStartDatetime();
+				if (visitStartDate != null) {
+					scheduledPeriod.setStart(visitStartDate);
+				} else if (task.getDateCreated() != null) {
+					scheduledPeriod.setStart(task.getDateCreated());
+				}
+				
+				Date visitEndDate = null;
+				
+				if (task.getDueDateType() == DueDateType.THIS_VISIT) {
+					// For THIS_VISIT, the reference visit IS the due visit
+					visitEndDate = task.getDueDateReferenceVisit().getStopDatetime();
+				} else if (task.getDueDateType() == DueDateType.NEXT_VISIT) {
+					// For NEXT_VISIT, find the visit that follows the reference visit
+					Visit nextVisit = findNextVisitAfterReference(task.getPatient(), task.getDueDateReferenceVisit());
+					log.warn("Task {}: Next visit: {}", task.getDescription(), nextVisit);
+					if (nextVisit != null) {
+						// Set start to next visit start if available
+						if (nextVisit.getStartDatetime() != null) {
+							scheduledPeriod.setStart(nextVisit.getStartDatetime());
+						}
+						// Set end date if next visit has ended
+						if (nextVisit.getStopDatetime() != null) {
+							visitEndDate = nextVisit.getStopDatetime();
+						}
+					}
+				}
+				
+				if (visitEndDate != null) {
+					log.warn("Task {}: Visit end date: {}", task.getDescription(), visitEndDate);
+					scheduledPeriod.setEnd(visitEndDate);
+				}
+			}
+		}
+		
+		// Always set scheduledPeriod (may have no end for ongoing visits, but should have start)
+		if (scheduledPeriod.hasStart() || scheduledPeriod.hasEnd() || dueKindValue != null) {
+			detail.setScheduled(scheduledPeriod);
+		}
+		
+		// Add due-kind extension if we have a due date type
+		if (dueKindValue != null) {
+			Extension dueKindExtension = new Extension();
+			dueKindExtension.setUrl(ACTIVITY_DUE_KIND_EXTENSION_URL);
+			dueKindExtension.setValue(new org.hl7.fhir.r4.model.CodeType(dueKindValue));
+			detail.addExtension(dueKindExtension);
 		}
 		
 		if (!detail.isEmpty()) {
@@ -178,6 +276,8 @@ public class CarePlanMapper {
 		task.setAssignee(null);
 		task.setAssigneeProviderRoleId(null);
 		task.setDueDate(null);
+		task.setDueDateType(null);
+		task.setDueDateReferenceVisit(null);
 		task.setRationale(null);
 		
 		if (carePlan.hasActivity() && !carePlan.getActivity().isEmpty()) {
@@ -189,28 +289,91 @@ public class CarePlanMapper {
 				CarePlanActivityDetailComponent detail = activity.getDetail();
 				
 				if (detail.hasStatus()) {
-					task.setStatus(detail.getStatus());
+					CarePlan.CarePlanActivityStatus status = detail.getStatus();
+					task.setStatus(status);
+					
+					if (status == CarePlan.CarePlanActivityStatus.CANCELLED) {
+						task.setVoided(true);
+						if (task.getDateVoided() == null) {
+							task.setDateVoided(new Date());
+						}
+					}
 				}
 				
 				if (detail.hasDescription()) {
 					task.setDescription(detail.getDescription());
 				}
 				
+				// Handle due date: read from activity-dueKind extension first
+				String dueKindValue = null;
+				Visit visitFromExtension = null;
+				
+				if (detail.hasExtension()) {
+					for (Extension extension : detail.getExtension()) {
+						if (ACTIVITY_DUE_KIND_EXTENSION_URL.equals(extension.getUrl()) && extension.hasValue()) {
+							IBaseDatatype value = extension.getValue();
+							if (value instanceof org.hl7.fhir.r4.model.CodeType) {
+								dueKindValue = ((org.hl7.fhir.r4.model.CodeType) value).getValue();
+							} else if (value instanceof StringType) {
+								dueKindValue = ((StringType) value).getValue();
+							}
+						} else if (ENCOUNTER_EXTENSION_URL.equals(extension.getUrl()) && extension.hasValue()) {
+							IBaseDatatype value = extension.getValue();
+							if (value instanceof Reference) {
+								Reference encounterRef = (Reference) value;
+								visitFromExtension = resolveVisitFromEncounterReference(encounterRef);
+							}
+						}
+					}
+				}
+				
+				// Set due date type based on extension
+				if ("this-visit".equals(dueKindValue)) {
+					task.setDueDateType(DueDateType.THIS_VISIT);
+					if (visitFromExtension != null) {
+						task.setDueDateReferenceVisit(visitFromExtension);
+					}
+				} else if ("next-visit".equals(dueKindValue)) {
+					task.setDueDateType(DueDateType.NEXT_VISIT);
+					if (visitFromExtension != null) {
+						task.setDueDateReferenceVisit(visitFromExtension);
+					}
+				} else if ("date".equals(dueKindValue)) {
+					task.setDueDateType(DueDateType.DATE);
+				}
+				
+				// Read due date from scheduledPeriod or other scheduled types
 				if (detail.hasScheduledPeriod() && detail.getScheduledPeriod().hasEnd()) {
 					task.setDueDate(detail.getScheduledPeriod().getEnd());
+					// If no dueKind extension was found, assume DATE type
+					if (task.getDueDateType() == null) {
+						task.setDueDateType(DueDateType.DATE);
+					}
 				} else if (detail.hasScheduled()) {
 					IBaseDatatype scheduledElement = detail.getScheduled();
 					if (scheduledElement instanceof DateTimeType) {
 						task.setDueDate(((DateTimeType) scheduledElement).getValue());
+						if (task.getDueDateType() == null) {
+							task.setDueDateType(DueDateType.DATE);
+						}
 					} else if (scheduledElement instanceof DateType) {
 						task.setDueDate(((DateType) scheduledElement).getValue());
+						if (task.getDueDateType() == null) {
+							task.setDueDateType(DueDateType.DATE);
+						}
 					} else if (scheduledElement instanceof Timing) {
 						Timing timing = (Timing) scheduledElement;
 						if (!timing.getEvent().isEmpty()) {
 							task.setDueDate(timing.getEvent().get(0).getValue());
+							if (task.getDueDateType() == null) {
+								task.setDueDateType(DueDateType.DATE);
+							}
 						} else if (timing.getRepeat() != null && timing.getRepeat().hasBoundsPeriod()
 						        && timing.getRepeat().getBoundsPeriod().hasEnd()) {
 							task.setDueDate(timing.getRepeat().getBoundsPeriod().getEnd());
+							if (task.getDueDateType() == null) {
+								task.setDueDateType(DueDateType.DATE);
+							}
 						}
 					}
 				}
@@ -280,6 +443,44 @@ public class CarePlanMapper {
 		reference.setReference(PRACTITIONER_ROLE_TYPE + "/" + roleUuid);
 		resolveProviderRoleDisplay(roleUuid).ifPresent(reference::setDisplay);
 		return reference;
+	}
+	
+	private Reference buildAuthorReference(User creator) {
+		if (creator == null) {
+			return null;
+		}
+		
+		try {
+			ProviderService providerService = Context.getProviderService();
+			Person person = creator.getPerson();
+			if (person != null) {
+				java.util.Collection<Provider> providers = providerService.getProvidersByPerson(person, false);
+				if (providers != null && !providers.isEmpty()) {
+					Provider provider = providers.iterator().next();
+					Reference practitionerRef = practitionerReferenceTranslator.toFhirResource(provider);
+					if (practitionerRef != null) {
+						return practitionerRef;
+					}
+				}
+			}
+		}
+		catch (Exception ex) {
+			log.debug("Unable to resolve Provider for User {}, using display name only", creator.getUuid(), ex);
+		}
+		
+		Reference authorRef = new Reference();
+		Person person = creator.getPerson();
+		if (person != null && person.getPersonName() != null) {
+			String displayName = person.getPersonName().getFullName();
+			if (StringUtils.isNotBlank(displayName)) {
+				authorRef.setDisplay(displayName);
+			}
+		}
+		if (!authorRef.hasDisplay()) {
+			authorRef.setDisplay(creator.getUsername());
+		}
+		
+		return authorRef;
 	}
 	
 	private CarePlanActivityKind resolveKindFromActivity(CarePlanActivityComponent activity) {
@@ -425,4 +626,134 @@ public class CarePlanMapper {
 		}
 		return null;
 	}
+	
+	/**
+	 * Resolves a Visit entity from an Encounter reference in FHIR extension.
+	 * In OpenMRS, Encounter/{uuid} can reference either an Encounter or a Visit (resolved by UUID).
+	 * This method tries to resolve as a Visit first, then as an Encounter.
+	 * 
+	 * @param encounterRef the Encounter reference from FHIR extension
+	 * @return the Visit entity, or null if not found
+	 */
+	private Visit resolveVisitFromEncounterReference(Reference encounterRef) {
+		if (encounterRef == null || !encounterRef.hasReference()) {
+			return null;
+		}
+		
+		try {
+			IIdType encounterId = encounterRef.getReferenceElement();
+			if (encounterId == null || StringUtils.isBlank(encounterId.getIdPart())) {
+				return null;
+			}
+			
+			String uuid = encounterId.getIdPart();
+			
+			// First, try to resolve as a Visit directly
+			try {
+				VisitService visitService = Context.getVisitService();
+				Visit visit = visitService.getVisitByUuid(uuid);
+				if (visit != null) {
+					return visit;
+				}
+			}
+			catch (Exception ex) {
+				log.debug("UUID {} is not a Visit, trying as Encounter", uuid, ex);
+			}
+			
+			// If not found as Visit, try to resolve as Encounter and get its Visit
+			EncounterService encounterService = Context.getEncounterService();
+			Encounter encounter = encounterService.getEncounterByUuid(uuid);
+			if (encounter != null && encounter.getVisit() != null) {
+				return encounter.getVisit();
+			}
+		}
+		catch (Exception ex) {
+			log.warn("Unable to resolve Visit from Encounter reference {}", encounterRef.getReference(), ex);
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Finds the visit that chronologically follows the reference visit for a NEXT_VISIT task.
+	 * 
+	 * @param patient the Patient
+	 * @param referenceVisit the visit when the task was created
+	 * @return the next visit after the reference visit, or null if not found
+	 */
+	private Visit findNextVisitAfterReference(Patient patient, Visit referenceVisit) {
+		if (patient == null || referenceVisit == null || referenceVisit.getStartDatetime() == null) {
+			return null;
+		}
+		
+		try {
+			java.util.List<Visit> visits = null;
+			
+			// Try to get visits directly from VisitService first
+			try {
+				org.openmrs.api.VisitService visitService = Context.getVisitService();
+				java.lang.reflect.Method method = visitService.getClass().getMethod("getVisits", Patient.class, Boolean.TYPE, Boolean.TYPE);
+				visits = (java.util.List<Visit>) method.invoke(visitService, patient, false, true);
+			} catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException e) {
+				// Try alternative method signatures
+				try {
+					org.openmrs.api.VisitService visitService = Context.getVisitService();
+					// Try getVisitsByPatient which might be available
+					java.lang.reflect.Method method = visitService.getClass().getMethod("getVisitsByPatient", Patient.class);
+					visits = (java.util.List<Visit>) method.invoke(visitService, patient);
+				} catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException e2) {
+					// If that doesn't work, try getting encounters and extracting visits
+					try {
+						EncounterService encounterService = Context.getEncounterService();
+						java.util.List<Encounter> encounters = encounterService.getEncountersByPatient(patient);
+						if (encounters != null) {
+							visits = encounters.stream()
+							        .map(Encounter::getVisit)
+							        .filter(v -> v != null)
+							        .distinct()
+							        .collect(java.util.stream.Collectors.toList());
+						}
+					} catch (Exception ex2) {
+						log.debug("Unable to get visits via encounters", ex2);
+					}
+				}
+			}
+			
+			if (visits != null && !visits.isEmpty()) {
+				Date refStart = referenceVisit.getStartDatetime();
+				Visit nextVisit = null;
+				
+				for (Visit visit : visits) {
+					Date visitStart = visit.getStartDatetime();
+					if (visitStart != null && visitStart.after(refStart)) {
+						// Make sure it's not the reference visit itself
+						boolean isReference = false;
+						if (visit.getVisitId() != null && referenceVisit.getVisitId() != null
+						        && visit.getVisitId().equals(referenceVisit.getVisitId())) {
+							isReference = true;
+						} else if (visit.getUuid() != null && referenceVisit.getUuid() != null
+						        && visit.getUuid().equals(referenceVisit.getUuid())) {
+							isReference = true;
+						}
+						
+						if (!isReference) {
+							// Find the earliest visit after the reference visit
+							if (nextVisit == null || (nextVisit.getStartDatetime() != null 
+							        && visitStart.before(nextVisit.getStartDatetime()))) {
+								nextVisit = visit;
+							}
+						}
+					}
+				}
+				
+				return nextVisit;
+			}
+		}
+		catch (Exception ex) {
+			log.warn("Unable to find next visit after reference visit {}", referenceVisit.getUuid(), ex);
+		}
+		
+		return null;
+	}
+	
 }

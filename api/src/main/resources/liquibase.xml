@@ -174,4 +174,26 @@
 		<addForeignKeyConstraint constraintName="tasks_task_assignee_provider_role_fk" baseTableName="tasks_task" baseColumnNames="assignee_provider_role_id" referencedTableName="provider_role" referencedColumnNames="provider_role_id"/>
 	</changeSet>
 
+	<changeSet id="tasks-2025-01-16-add-due-date-type-and-visit-reference" author="developer">
+		<preConditions onFail="MARK_RAN">
+			<and>
+				<tableExists tableName="tasks_task"/>
+				<not>
+					<columnExists tableName="tasks_task" columnName="due_date_type"/>
+				</not>
+				<not>
+					<columnExists tableName="tasks_task" columnName="due_date_reference_visit_id"/>
+				</not>
+			</and>
+		</preConditions>
+		<comment>
+			Add due_date_type and due_date_reference_visit_id columns to support visit-based due dates
+		</comment>
+		<addColumn tableName="tasks_task">
+			<column name="due_date_type" type="varchar(50)"/>
+			<column name="due_date_reference_visit_id" type="int"/>
+		</addColumn>
+		<addForeignKeyConstraint constraintName="tasks_task_due_date_reference_visit_fk" baseTableName="tasks_task" baseColumnNames="due_date_reference_visit_id" referencedTableName="visit" referencedColumnNames="visit_id"/>
+	</changeSet>
+
 </databaseChangeLog>

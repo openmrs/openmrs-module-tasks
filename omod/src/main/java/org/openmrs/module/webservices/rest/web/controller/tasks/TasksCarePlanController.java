@@ -71,6 +71,18 @@ public class TasksCarePlanController {
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(bundle));
 	}
 	
+	@GetMapping(path = "/{carePlanId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> read(@PathVariable("carePlanId") String carePlanId) {
+		CarePlan carePlan = carePlanFhirResourceProvider.read(new IdType("CarePlan", carePlanId));
+		
+		if (carePlan == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
+			        .body(errorJson("CarePlan not found for ID: " + carePlanId));
+		}
+		
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(carePlan));
+	}
+	
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> create(@RequestBody String carePlanPayload) {
 		CarePlan carePlan = parseCarePlan(carePlanPayload);
