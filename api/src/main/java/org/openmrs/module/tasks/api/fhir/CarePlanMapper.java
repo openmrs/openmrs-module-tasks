@@ -116,6 +116,10 @@ public class CarePlanMapper {
 			carePlan.setAuthor(authorRef);
 		}
 		
+		if (task.getDateCreated() != null) {
+			carePlan.setCreated(task.getDateCreated());
+		}
+		
 		CarePlanActivityComponent activity = new CarePlanActivityComponent();
 		Reference reference = buildActivityReference(task.getKind());
 		if (reference != null) {
@@ -170,7 +174,6 @@ public class CarePlanMapper {
 			
 			Visit referenceVisit = task.getDueDateReferenceVisit();
 			if (referenceVisit != null) {
-				log.warn("Task {}: Reference visit uuid: {}", task.getDescription(), referenceVisit.getUuid());
 				// Add encounter extension for reference visit
 				if (referenceVisit.getUuid() != null) {
 					Extension encounterExtension = new Extension();
@@ -181,7 +184,6 @@ public class CarePlanMapper {
 					detail.addExtension(encounterExtension);
 				}
 
-				log.warn("Task {}: Reference visit start date: {}", task.getDescription(), referenceVisit.getStartDatetime());
 				// Set start to visit start date (or task creation date if visit start not available)
 				Date visitStartDate = referenceVisit.getStartDatetime();
 				if (visitStartDate != null) {
@@ -198,7 +200,6 @@ public class CarePlanMapper {
 				} else if (task.getDueDateType() == DueDateType.NEXT_VISIT) {
 					// For NEXT_VISIT, find the visit that follows the reference visit
 					Visit nextVisit = findNextVisitAfterReference(task.getPatient(), task.getDueDateReferenceVisit());
-					log.warn("Task {}: Next visit: {}", task.getDescription(), nextVisit);
 					if (nextVisit != null) {
 						// Set start to next visit start if available
 						if (nextVisit.getStartDatetime() != null) {
@@ -212,7 +213,6 @@ public class CarePlanMapper {
 				}
 				
 				if (visitEndDate != null) {
-					log.warn("Task {}: Visit end date: {}", task.getDescription(), visitEndDate);
 					scheduledPeriod.setEnd(visitEndDate);
 				}
 			}
