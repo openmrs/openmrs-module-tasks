@@ -7,6 +7,10 @@ import org.openmrs.module.fhir2.api.translators.LocationTypeTranslator;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Test-only implementation of LocationTypeTranslator. Used to satisfy FHIR2 translation
+ * dependencies in unit tests.
+ */
 public class TestLocationTypeTranslator implements LocationTypeTranslator {
 	
 	@Override

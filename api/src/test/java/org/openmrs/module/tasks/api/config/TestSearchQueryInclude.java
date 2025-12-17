@@ -8,11 +8,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Test-only implementation of SearchQueryInclude. Returns no included resources during unit tests.
+ */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class TestSearchQueryInclude implements SearchQueryInclude {
 	
 	@Override
 	public Set<IBaseResource> getIncludedResources(List resources, SearchParameterMap searchParameterMap) {
+		
 		return Collections.emptySet();
 	}
 }

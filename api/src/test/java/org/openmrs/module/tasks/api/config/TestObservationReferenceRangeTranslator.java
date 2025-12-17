@@ -7,6 +7,10 @@ import org.openmrs.module.fhir2.api.translators.ObservationReferenceRangeTransla
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Test-only implementation of ObservationReferenceRangeTranslator. Provides an empty reference
+ * range for unit tests.
+ */
 public class TestObservationReferenceRangeTranslator implements ObservationReferenceRangeTranslator {
 	
 	@Override
