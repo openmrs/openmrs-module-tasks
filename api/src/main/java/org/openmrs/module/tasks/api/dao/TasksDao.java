@@ -12,6 +12,7 @@ package org.openmrs.module.tasks.api.dao;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.openmrs.api.db.hibernate.HibernateUtil;
+import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -44,5 +45,23 @@ public class TasksDao {
 	public List<Task> getTasksByPatientId(Integer patientId) {
 		return getCurrentSession().createQuery("from tasks.Task t where t.patient.patientId = :patientId", Task.class)
 		        .setParameter("patientId", patientId).getResultList();
+	}
+	
+	public SystemTask getSystemTaskByUuid(String uuid) {
+		return HibernateUtil.getUniqueEntityByUUID(sessionFactory, SystemTask.class, uuid);
+	}
+	
+	public List<SystemTask> getAllSystemTasks(boolean includeRetired) {
+		if (includeRetired) {
+			return getCurrentSession().createQuery("from tasks.SystemTask", SystemTask.class).getResultList();
+		} else {
+			return getCurrentSession().createQuery("from tasks.SystemTask st where st.retired = false", SystemTask.class)
+			        .getResultList();
+		}
+	}
+	
+	public SystemTask saveSystemTask(SystemTask systemTask) {
+		getCurrentSession().saveOrUpdate(systemTask);
+		return systemTask;
 	}
 }

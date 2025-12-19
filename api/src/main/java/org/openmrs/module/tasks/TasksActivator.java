@@ -12,6 +12,7 @@ package org.openmrs.module.tasks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.BaseModuleActivator;
+import org.openmrs.module.tasks.api.loader.SystemTaskCsvLoader;
 
 /**
  * This class contains the logic that is run every time this module is either started or shutdown
@@ -25,6 +26,15 @@ public class TasksActivator extends BaseModuleActivator {
 	 */
 	public void started() {
 		log.info("Started Tasks");
+		
+		// Load system tasks from CSV files
+		try {
+			SystemTaskCsvLoader loader = new SystemTaskCsvLoader();
+			loader.loadSystemTasksFromCsvFiles();
+		}
+		catch (Exception e) {
+			log.error("Error loading system tasks from CSV files", e);
+		}
 	}
 	
 	/**

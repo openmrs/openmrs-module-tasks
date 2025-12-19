@@ -45,6 +45,10 @@ public class Task extends BaseOpenmrsData {
 	@JoinColumn(name = "patient_id", nullable = false)
 	private Patient patient;
 	
+	@ManyToOne
+	@JoinColumn(name = "system_task_id")
+	private SystemTask systemTask;
+	
 	@Column(name = "description", length = 1000)
 	private String description;
 	
@@ -108,6 +112,14 @@ public class Task extends BaseOpenmrsData {
 	
 	public void setPatient(Patient patient) {
 		this.patient = patient;
+	}
+	
+	public SystemTask getSystemTask() {
+		return systemTask;
+	}
+	
+	public void setSystemTask(SystemTask systemTask) {
+		this.systemTask = systemTask;
 	}
 	
 	public String getDescription() {

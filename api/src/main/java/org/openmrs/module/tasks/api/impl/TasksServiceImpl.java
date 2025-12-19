@@ -11,12 +11,13 @@ package org.openmrs.module.tasks.api.impl;
 
 import org.openmrs.api.APIException;
 import org.openmrs.api.impl.BaseOpenmrsService;
+import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.TasksService;
 import org.openmrs.module.tasks.api.dao.TasksDao;
 
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 
 public class TasksServiceImpl extends BaseOpenmrsService implements TasksService {
 	
@@ -69,5 +70,39 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 			throw new APIException("Task cannot be null");
 		}
 		dao.deleteTask(task);
+	}
+	
+	@Override
+	public SystemTask getSystemTaskByUuid(String uuid) throws APIException {
+		return dao.getSystemTaskByUuid(uuid);
+	}
+	
+	@Override
+	public List<SystemTask> getAllSystemTasks(boolean includeRetired) throws APIException {
+		return dao.getAllSystemTasks(includeRetired);
+	}
+	
+	@Override
+	public SystemTask saveSystemTask(SystemTask systemTask) throws APIException {
+		return dao.saveSystemTask(systemTask);
+	}
+	
+	@Override
+	public void retireSystemTask(SystemTask systemTask, String retireReason) throws APIException {
+		if (systemTask == null) {
+			throw new APIException("SystemTask cannot be null");
+		}
+		if (Boolean.TRUE.equals(systemTask.getRetired())) {
+			return;
+		}
+		if (retireReason == null || retireReason.trim().isEmpty()) {
+			throw new APIException("Retire reason is required");
+		}
+		systemTask.setRetired(true);
+		systemTask.setRetireReason(retireReason);
+		if (systemTask.getDateRetired() == null) {
+			systemTask.setDateRetired(new Date());
+		}
+		dao.saveSystemTask(systemTask);
 	}
 }
