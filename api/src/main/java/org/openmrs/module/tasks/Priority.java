@@ -13,19 +13,5 @@ package org.openmrs.module.tasks;
  * Enumeration of priority levels for tasks.
  */
 public enum Priority {
-	
-	/**
-	 * High priority task.
-	 */
-	HIGH,
-	
-	/**
-	 * Medium priority task.
-	 */
-	MEDIUM,
-	
-	/**
-	 * Low priority task.
-	 */
-	LOW
+	HIGH, MEDIUM, LOW
 }
