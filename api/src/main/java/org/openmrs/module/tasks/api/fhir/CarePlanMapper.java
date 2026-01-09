@@ -66,7 +66,7 @@ public class CarePlanMapper {
 	private static final String ACTIVITY_DUE_KIND_EXTENSION_URL = "http://openmrs.org/fhir/StructureDefinition/activity-dueKind";
 
 	private static final String ACTIVITY_PRIORITY_EXTENSION_URL = "http://openmrs.org/fhir/StructureDefinition/activity-priority";
-	
+
 	private static final Map<CarePlanActivityKind, String> KIND_TO_RESOURCE_TYPE = new EnumMap<>(CarePlanActivityKind.class);
 	
 	static {
@@ -291,7 +291,7 @@ public class CarePlanMapper {
 		task.setDueDateReferenceVisit(null);
 		task.setRationale(null);
 		task.setPriority(null);
-		
+
 		if (carePlan.hasActivity() && !carePlan.getActivity().isEmpty()) {
 			CarePlanActivityComponent activity = carePlan.getActivityFirstRep();
 			
@@ -355,7 +355,7 @@ public class CarePlanMapper {
 						log.warn("Unknown priority value: {}", priorityValue);
 					}
 				}
-				
+
 				// Set due date type based on extension
 				if ("this-visit".equals(dueKindValue)) {
 					task.setDueDateType(DueDateType.THIS_VISIT);
