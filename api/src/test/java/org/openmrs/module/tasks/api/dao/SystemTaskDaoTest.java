@@ -17,7 +17,6 @@ import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.Properties;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -32,13 +31,6 @@ import static org.junit.Assert.assertThat;
  * Integration tests for SystemTask DAO methods.
  */
 public class SystemTaskDaoTest extends BaseModuleContextSensitiveTest {
-	
-	@Override
-	public Properties getRuntimeProperties() {
-		Properties props = super.getRuntimeProperties();
-		props.setProperty("module.allow_web_admin", "false");
-		return props;
-	}
 	
 	@Autowired
 	TasksDao dao;
