@@ -19,8 +19,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.Properties;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Integration tests for SystemTask DAO methods.
@@ -112,6 +118,9 @@ public class SystemTaskDaoTest extends BaseModuleContextSensitiveTest {
 		
 		assertThat(allTasks.size(), is(2));
 		assertThat(allTasks, hasItems(hasProperty("name", is("active-task")), hasProperty("name", is("retired-task"))));
+		
+		List<SystemTask> activeTasks = dao.getAllSystemTasks(false);
+		assertThat(activeTasks.size(), is(1));
 	}
 	
 	@Test

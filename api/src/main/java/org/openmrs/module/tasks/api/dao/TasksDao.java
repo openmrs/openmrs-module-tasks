@@ -9,6 +9,10 @@
  */
 package org.openmrs.module.tasks.api.dao;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.openmrs.api.db.hibernate.HibernateUtil;
@@ -52,12 +56,18 @@ public class TasksDao {
 	}
 	
 	public List<SystemTask> getAllSystemTasks(boolean includeRetired) {
-		if (includeRetired) {
-			return getCurrentSession().createQuery("from tasks.SystemTask", SystemTask.class).getResultList();
-		} else {
-			return getCurrentSession().createQuery("from tasks.SystemTask st where st.retired = false", SystemTask.class)
-			        .getResultList();
+		Session session = getCurrentSession();
+		CriteriaBuilder cb = session.getCriteriaBuilder();
+		CriteriaQuery<SystemTask> cq = cb.createQuery(SystemTask.class);
+		Root<SystemTask> root = cq.from(SystemTask.class);
+		
+		cq.orderBy(cb.asc(root.get("name")));
+		
+		if (!includeRetired) {
+			cq.where(cb.isFalse(root.get("retired")));
 		}
+		
+		return session.createQuery(cq).getResultList();
 	}
 	
 	public SystemTask saveSystemTask(SystemTask systemTask) {

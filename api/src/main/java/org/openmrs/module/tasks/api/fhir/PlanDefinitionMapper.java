@@ -96,27 +96,25 @@ public class PlanDefinitionMapper {
 		
 		// Add default assignee role as participant
 		if (systemTask.getDefaultAssigneeProviderRoleId() != null) {
-			PlanDefinition.PlanDefinitionActionParticipantComponent participant = new PlanDefinition.PlanDefinitionActionParticipantComponent();
-			participant.setType(PlanDefinition.ActionParticipantType.PRACTITIONER);
-			
-			String roleUuid = resolveProviderRoleUuid(systemTask.getDefaultAssigneeProviderRoleId());
-			if (StringUtils.isNotBlank(roleUuid)) {
+			ProviderRole providerRole = Context.getProviderService().getProviderRole(
+			    systemTask.getDefaultAssigneeProviderRoleId());
+			if (providerRole != null) {
+				PlanDefinition.PlanDefinitionActionParticipantComponent participant = new PlanDefinition.PlanDefinitionActionParticipantComponent();
+				participant.setType(PlanDefinition.ActionParticipantType.PRACTITIONER);
+				
 				CodeableConcept roleConcept = new CodeableConcept();
 				Coding coding = new Coding();
 				coding.setSystem(PRACTITIONER_ROLE_TYPE);
-				coding.setCode(roleUuid);
+				coding.setCode(providerRole.getUuid());
 				
-				// Add display name if available
-				String roleName = resolveProviderRoleName(systemTask.getDefaultAssigneeProviderRoleId());
-				if (StringUtils.isNotBlank(roleName)) {
-					coding.setDisplay(roleName);
+				if (StringUtils.isNotBlank(providerRole.getName())) {
+					coding.setDisplay(providerRole.getName());
 				}
 				
 				roleConcept.addCoding(coding);
 				participant.setRole(roleConcept);
+				action.addParticipant(participant);
 			}
-			
-			action.addParticipant(participant);
 		}
 		
 		// Add reason/rationale to action
@@ -216,46 +214,6 @@ public class PlanDefinitionMapper {
 		}
 		
 		return systemTask;
-	}
-	
-	/**
-	 * Resolves a ProviderRole UUID from a ProviderRole ID.
-	 */
-	private String resolveProviderRoleUuid(Integer providerRoleId) {
-		if (providerRoleId == null) {
-			return null;
-		}
-		try {
-			ProviderService providerService = Context.getProviderService();
-			ProviderRole providerRole = providerService.getProviderRole(providerRoleId);
-			if (providerRole != null) {
-				return providerRole.getUuid();
-			}
-		}
-		catch (Exception ex) {
-			log.warn("Unable to resolve provider role UUID for id {}", providerRoleId, ex);
-		}
-		return null;
-	}
-	
-	/**
-	 * Resolves a ProviderRole name from a ProviderRole ID.
-	 */
-	private String resolveProviderRoleName(Integer providerRoleId) {
-		if (providerRoleId == null) {
-			return null;
-		}
-		try {
-			ProviderService providerService = Context.getProviderService();
-			ProviderRole providerRole = providerService.getProviderRole(providerRoleId);
-			if (providerRole != null) {
-				return providerRole.getName();
-			}
-		}
-		catch (Exception ex) {
-			log.warn("Unable to resolve provider role name for id {}", providerRoleId, ex);
-		}
-		return null;
 	}
 	
 	/**

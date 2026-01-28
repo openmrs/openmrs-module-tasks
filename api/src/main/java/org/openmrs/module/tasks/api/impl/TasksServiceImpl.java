@@ -15,6 +15,7 @@ import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.TasksService;
 import org.openmrs.module.tasks.api.dao.TasksDao;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -31,21 +32,25 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 	}
 	
 	@Override
+	@Transactional(readOnly = true)
 	public Task getTaskByUuid(String uuid) throws APIException {
 		return dao.getTaskByUuid(uuid);
 	}
 	
 	@Override
+	@Transactional
 	public Task saveTask(Task task) throws APIException {
 		return dao.saveTask(task);
 	}
 	
 	@Override
+	@Transactional(readOnly = true)
 	public List<Task> getTasksByPatientId(Integer patientId) throws APIException {
 		return dao.getTasksByPatientId(patientId);
 	}
 	
 	@Override
+	@Transactional
 	public void voidTask(Task task, String voidReason) throws APIException {
 		if (task == null) {
 			throw new APIException("Task cannot be null");
@@ -65,6 +70,7 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 	}
 	
 	@Override
+	@Transactional
 	public void purgeTask(Task task) throws APIException {
 		if (task == null) {
 			throw new APIException("Task cannot be null");
@@ -73,27 +79,31 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 	}
 	
 	@Override
+	@Transactional(readOnly = true)
 	public SystemTask getSystemTaskByUuid(String uuid) throws APIException {
 		return dao.getSystemTaskByUuid(uuid);
 	}
 	
 	@Override
+	@Transactional(readOnly = true)
 	public List<SystemTask> getAllSystemTasks(boolean includeRetired) throws APIException {
 		return dao.getAllSystemTasks(includeRetired);
 	}
 	
 	@Override
+	@Transactional
 	public SystemTask saveSystemTask(SystemTask systemTask) throws APIException {
 		return dao.saveSystemTask(systemTask);
 	}
 	
 	@Override
+	@Transactional
 	public void retireSystemTask(SystemTask systemTask, String retireReason) throws APIException {
 		if (systemTask == null) {
 			throw new APIException("SystemTask cannot be null");
 		}
-		if (Boolean.TRUE.equals(systemTask.getRetired())) {
-			return;
+		if (retireReason == null || retireReason.trim().isEmpty()) {
+			retireReason = systemTask.getRetireReason();
 		}
 		if (retireReason == null || retireReason.trim().isEmpty()) {
 			throw new APIException("Retire reason is required");

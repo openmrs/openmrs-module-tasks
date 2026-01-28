@@ -13,9 +13,8 @@ import org.openmrs.annotation.Authorized;
 import org.openmrs.api.APIException;
 import org.openmrs.api.OpenmrsService;
 import org.openmrs.module.tasks.SystemTask;
-import org.openmrs.module.tasks.TasksConfig;
 import org.openmrs.module.tasks.Task;
-import org.springframework.transaction.annotation.Transactional;
+import org.openmrs.module.tasks.TasksConfig;
 
 import java.util.List;
 
@@ -34,7 +33,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
-	@Transactional(readOnly = true)
 	Task getTaskByUuid(String uuid) throws APIException;
 	
 	/**
@@ -46,7 +44,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_MANAGE_PRIVILEGE)
-	@Transactional
 	Task saveTask(Task task) throws APIException;
 	
 	/**
@@ -58,7 +55,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
-	@Transactional(readOnly = true)
 	List<Task> getTasksByPatientId(Integer patientId) throws APIException;
 	
 	/**
@@ -69,7 +65,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_DELETE_PRIVILEGE)
-	@Transactional
 	void voidTask(Task task, String voidReason) throws APIException;
 	
 	/**
@@ -79,7 +74,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_DELETE_PRIVILEGE)
-	@Transactional
 	void purgeTask(Task task) throws APIException;
 	
 	/**
@@ -90,7 +84,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
-	@Transactional(readOnly = true)
 	SystemTask getSystemTaskByUuid(String uuid) throws APIException;
 	
 	/**
@@ -101,7 +94,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
-	@Transactional(readOnly = true)
 	List<SystemTask> getAllSystemTasks(boolean includeRetired) throws APIException;
 	
 	/**
@@ -112,7 +104,6 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_MANAGE_PRIVILEGE)
-	@Transactional
 	SystemTask saveSystemTask(SystemTask systemTask) throws APIException;
 	
 	/**
@@ -123,6 +114,5 @@ public interface TasksService extends OpenmrsService {
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_MANAGE_PRIVILEGE)
-	@Transactional
 	void retireSystemTask(SystemTask systemTask, String retireReason) throws APIException;
 }
