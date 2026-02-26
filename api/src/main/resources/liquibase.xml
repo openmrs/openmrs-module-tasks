@@ -13,7 +13,7 @@
         for a list of supported elements and attributes
     -->
 
-	<!-- Changeset 1: Create tasks_systemtask table (must come before tasks_task) -->
+	<!-- Create tasks_systemtask table (must come before tasks_task) -->
 	<changeSet id="tasks-create-systemtask-table" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<not><tableExists tableName="tasks_systemtask"/></not>
@@ -58,7 +58,7 @@
 		<addForeignKeyConstraint constraintName="tasks_systemtask_retired_by_fk" baseTableName="tasks_systemtask" baseColumnNames="retired_by" referencedTableName="users" referencedColumnNames="user_id"/>
 	</changeSet>
 
-	<!-- Changeset 2: Conditional FK for systemtask → provider_role (only if providermanagement module is loaded) -->
+	<!-- Conditional FK for systemtask → provider_role (only if providermanagement module is loaded OR OpenMRS version >= 2.8.0) -->
 	<changeSet id="tasks-systemtask-provider-role-fk" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<tableExists tableName="provider_role"/>
@@ -69,7 +69,7 @@
 		<addForeignKeyConstraint constraintName="tasks_systemtask_default_assignee_role_fk" baseTableName="tasks_systemtask" baseColumnNames="default_assignee_provider_role_id" referencedTableName="provider_role" referencedColumnNames="provider_role_id"/>
 	</changeSet>
 
-	<!-- Changeset 3: Create tasks_task table -->
+	<!-- Create tasks_task table -->
 	<changeSet id="tasks-create-task-table" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<not><tableExists tableName="tasks_task"/></not>
@@ -122,7 +122,7 @@
 		<addForeignKeyConstraint constraintName="tasks_task_system_task_fk" baseTableName="tasks_task" baseColumnNames="system_task_id" referencedTableName="tasks_systemtask" referencedColumnNames="tasks_systemtask_id"/>
 	</changeSet>
 
-	<!-- Changeset 4: Conditional FK for task → provider_role (only if providermanagement module is loaded) -->
+	<!-- Conditional FK for task → provider_role (only if providermanagement module is loaded or OpenMRS version >= 2.8.0) -->
 	<changeSet id="tasks-task-provider-role-fk" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<tableExists tableName="provider_role"/>
@@ -133,7 +133,7 @@
 		<addForeignKeyConstraint constraintName="tasks_task_assignee_provider_role_fk" baseTableName="tasks_task" baseColumnNames="assignee_provider_role_id" referencedTableName="provider_role" referencedColumnNames="provider_role_id"/>
 	</changeSet>
 
-	<!-- Changeset 5: View Tasks privilege -->
+	<!-- View Tasks privilege -->
 	<changeSet id="tasks-privilege-view" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<sqlCheck expectedResult="0">
@@ -147,7 +147,7 @@
 		</insert>
 	</changeSet>
 
-	<!-- Changeset 6: Manage Tasks privilege -->
+	<!-- Manage Tasks privilege -->
 	<changeSet id="tasks-privilege-manage" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<sqlCheck expectedResult="0">
@@ -161,7 +161,7 @@
 		</insert>
 	</changeSet>
 
-	<!-- Changeset 7: Delete Tasks privilege -->
+	<!-- Delete Tasks privilege -->
 	<changeSet id="tasks-privilege-delete" author="developer">
 		<preConditions onFail="MARK_RAN">
 			<sqlCheck expectedResult="0">
