@@ -13,33 +13,18 @@
 
 	<dependencies>
         <dependency>
-            <groupId>org.openmrs.module</groupId>
-            <artifactId>tasks-api</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>${project.parent.artifactId}-api</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 		<!-- Use fhir2-api instead of bundling HAPI FHIR directly - this avoids classloader conflicts -->
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>fhir2-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>5.3.30</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-			<version>5.3.30</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>webservices.rest-omod</artifactId>
-			<version>2.50.0</version>
-			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
