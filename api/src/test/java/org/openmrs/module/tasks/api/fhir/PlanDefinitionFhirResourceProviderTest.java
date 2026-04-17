@@ -127,33 +127,33 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		active1.setTitle("Active Template 1");
 		active1.setPriority(Priority.HIGH);
 		tasksService.saveSystemTask(active1);
-
+		
 		SystemTask active2 = new SystemTask();
 		active2.setName("active-template-2");
 		active2.setTitle("Active Template 2");
 		active2.setPriority(Priority.MEDIUM);
 		tasksService.saveSystemTask(active2);
-
+		
 		SystemTask retired = new SystemTask();
 		retired.setName("retired-template");
 		retired.setTitle("Retired Template");
 		retired.setRetired(true);
 		retired.setRetireReason("No longer used");
 		tasksService.saveSystemTask(retired);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		// When: Searching without status filter
 		List<PlanDefinition> results = provider.search(null);
-
+		
 		// Then: Should return only active system tasks
 		assertThat(results.size(), is(greaterThanOrEqualTo(2)));
-
+		
 		boolean foundActive1 = results.stream().anyMatch(pd -> "active-template-1".equals(pd.getName()));
 		boolean foundActive2 = results.stream().anyMatch(pd -> "active-template-2".equals(pd.getName()));
 		boolean foundRetired = results.stream().anyMatch(pd -> "retired-template".equals(pd.getName()));
-
+		
 		assertThat(foundActive1, is(true));
 		assertThat(foundActive2, is(true));
 		assertThat(foundRetired, is(false));
@@ -166,27 +166,27 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		active.setName("active-for-status-filter");
 		active.setTitle("Active for Status Filter");
 		tasksService.saveSystemTask(active);
-
+		
 		SystemTask retired = new SystemTask();
 		retired.setName("retired-for-status-filter");
 		retired.setTitle("Retired for Status Filter");
 		retired.setRetired(true);
 		retired.setRetireReason("Testing");
 		tasksService.saveSystemTask(retired);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		// When: Searching with status=active
 		List<PlanDefinition> results = provider.search("active");
-
+		
 		// Then: Should return only active system tasks
 		boolean foundActive = results.stream().anyMatch(pd -> "active-for-status-filter".equals(pd.getName()));
 		boolean foundRetired = results.stream().anyMatch(pd -> "retired-for-status-filter".equals(pd.getName()));
-
+		
 		assertThat(foundActive, is(true));
 		assertThat(foundRetired, is(false));
-
+		
 		// All results should have ACTIVE status
 		for (PlanDefinition pd : results) {
 			assertThat(pd.getStatus(), is(Enumerations.PublicationStatus.ACTIVE));
@@ -200,27 +200,27 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		active.setName("active-for-retired-filter");
 		active.setTitle("Active for Retired Filter");
 		tasksService.saveSystemTask(active);
-
+		
 		SystemTask retired = new SystemTask();
 		retired.setName("retired-for-retired-filter");
 		retired.setTitle("Retired for Retired Filter");
 		retired.setRetired(true);
 		retired.setRetireReason("Testing");
 		tasksService.saveSystemTask(retired);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		// When: Searching with status=retired
 		List<PlanDefinition> results = provider.search("retired");
-
+		
 		// Then: Should return only retired system tasks
 		boolean foundActive = results.stream().anyMatch(pd -> "active-for-retired-filter".equals(pd.getName()));
 		boolean foundRetired = results.stream().anyMatch(pd -> "retired-for-retired-filter".equals(pd.getName()));
-
+		
 		assertThat(foundActive, is(false));
 		assertThat(foundRetired, is(true));
-
+		
 		// All results should have RETIRED status
 		for (PlanDefinition pd : results) {
 			assertThat(pd.getStatus(), is(Enumerations.PublicationStatus.RETIRED));
@@ -259,23 +259,21 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		systemTask.setTitle("High Priority Template");
 		systemTask.setPriority(Priority.HIGH);
 		tasksService.saveSystemTask(systemTask);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		// When: Searching
 		List<PlanDefinition> results = provider.search(null);
-
+		
 		// Then: The result should include priority extension
-		PlanDefinition found = results.stream()
-		        .filter(pd -> "high-priority-template".equals(pd.getName()))
-		        .findFirst()
+		PlanDefinition found = results.stream().filter(pd -> "high-priority-template".equals(pd.getName())).findFirst()
 		        .orElse(null);
-
+		
 		assertThat(found, is(notNullValue()));
 		assertThat(found.hasAction(), is(true));
 		assertThat(found.getActionFirstRep().hasExtension(), is(true));
-
+		
 		boolean hasPriorityExtension = found.getActionFirstRep().getExtension().stream()
 		        .anyMatch(ext -> ext.getUrl().contains("activity-priority"));
 		assertThat(hasPriorityExtension, is(true));
@@ -289,19 +287,17 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		systemTask.setTitle("Template with Rationale");
 		systemTask.setRationale("Important clinical reason");
 		tasksService.saveSystemTask(systemTask);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		// When: Searching
 		List<PlanDefinition> results = provider.search(null);
-
+		
 		// Then: The result should include rationale on action.reason (not purpose)
-		PlanDefinition found = results.stream()
-		        .filter(pd -> "template-with-rationale".equals(pd.getName()))
-		        .findFirst()
+		PlanDefinition found = results.stream().filter(pd -> "template-with-rationale".equals(pd.getName())).findFirst()
 		        .orElse(null);
-
+		
 		assertThat(found, is(notNullValue()));
 		// Rationale is on action.reason, not purpose
 		assertThat(found.hasPurpose(), is(false));

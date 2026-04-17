@@ -15,15 +15,22 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.openmrs.api.APIException;
+import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.dao.TasksDao;
 import org.openmrs.module.tasks.api.impl.TasksServiceImpl;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -114,6 +121,65 @@ public class TasksServiceTest {
 		verify(dao).saveTask(task);
 	}
 	
+	@Test(expected = APIException.class)
+	public void voidTask_withNullTask_shouldThrow() {
+		tasksService.voidTask(null, "reason");
+	}
+	
+	@Test(expected = APIException.class)
+	public void voidTask_withNullReason_shouldThrow() {
+		tasksService.voidTask(new Task(), null);
+	}
+	
+	@Test(expected = APIException.class)
+	public void voidTask_withEmptyReason_shouldThrow() {
+		tasksService.voidTask(new Task(), "");
+	}
+	
+	@Test(expected = APIException.class)
+	public void voidTask_withWhitespaceReason_shouldThrow() {
+		tasksService.voidTask(new Task(), "   ");
+	}
+	
+	@Test
+	public void voidTask_whenAlreadyVoided_shouldReturnEarlyWithoutSaving() {
+		Task task = new Task();
+		task.setVoided(true);
+		task.setVoidReason("already voided");
+		
+		tasksService.voidTask(task, "new reason");
+		
+		// Reason is NOT updated, and DAO is not called again
+		assertThat(task.getVoidReason(), is("already voided"));
+		verify(dao, never()).saveTask(task);
+	}
+	
+	@Test
+	public void voidTask_shouldSetDateVoidedWhenNull() {
+		Task task = new Task();
+		when(dao.saveTask(task)).thenReturn(task);
+		
+		Date before = new Date();
+		tasksService.voidTask(task, "reason");
+		Date after = new Date();
+		
+		assertThat(task.getDateVoided(), is(notNullValue()));
+		assertThat(task.getDateVoided().getTime() >= before.getTime(), is(true));
+		assertThat(task.getDateVoided().getTime() <= after.getTime(), is(true));
+	}
+	
+	@Test
+	public void voidTask_shouldPreserveExistingDateVoided() {
+		Task task = new Task();
+		Date existing = new Date(1000L);
+		task.setDateVoided(existing);
+		when(dao.saveTask(task)).thenReturn(task);
+		
+		tasksService.voidTask(task, "reason");
+		
+		assertThat(task.getDateVoided(), is(sameInstance(existing)));
+	}
+	
 	@Test
 	public void purgeTask_shouldDelegateToDao() {
 		//Given
@@ -124,5 +190,126 @@ public class TasksServiceTest {
 		
 		//Then
 		verify(dao).deleteTask(task);
+	}
+	
+	@Test(expected = APIException.class)
+	public void purgeTask_withNullTask_shouldThrow() {
+		tasksService.purgeTask(null);
+	}
+	
+	@Test
+	public void saveSystemTask_shouldDelegateToDao() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setName("a-task");
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		SystemTask saved = tasksService.saveSystemTask(systemTask);
+		
+		verify(dao).saveSystemTask(systemTask);
+		assertThat(saved, is(sameInstance(systemTask)));
+	}
+	
+	@Test
+	public void getSystemTaskByUuid_shouldDelegateToDao() {
+		String uuid = "system-task-uuid";
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid(uuid);
+		when(dao.getSystemTaskByUuid(uuid)).thenReturn(systemTask);
+		
+		SystemTask found = tasksService.getSystemTaskByUuid(uuid);
+		
+		verify(dao).getSystemTaskByUuid(uuid);
+		assertThat(found, is(sameInstance(systemTask)));
+	}
+	
+	@Test
+	public void getAllSystemTasks_shouldDelegateToDaoWithIncludeRetiredFlag() {
+		SystemTask active = new SystemTask();
+		SystemTask retired = new SystemTask();
+		when(dao.getAllSystemTasks(false)).thenReturn(Arrays.asList(active));
+		when(dao.getAllSystemTasks(true)).thenReturn(Arrays.asList(active, retired));
+		
+		assertThat(tasksService.getAllSystemTasks(false).size(), is(1));
+		assertThat(tasksService.getAllSystemTasks(true).size(), is(2));
+		verify(dao).getAllSystemTasks(false);
+		verify(dao).getAllSystemTasks(true);
+	}
+	
+	@Test
+	public void retireSystemTask_shouldMarkRetiredAndDelegateToDao() {
+		SystemTask systemTask = new SystemTask();
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		tasksService.retireSystemTask(systemTask, "no longer needed");
+		
+		assertThat(systemTask.getRetired(), is(true));
+		assertThat(systemTask.getRetireReason(), is("no longer needed"));
+		assertThat(systemTask.getDateRetired(), is(notNullValue()));
+		verify(dao).saveSystemTask(systemTask);
+	}
+	
+	@Test(expected = APIException.class)
+	public void retireSystemTask_withNullSystemTask_shouldThrow() {
+		tasksService.retireSystemTask(null, "reason");
+	}
+	
+	@Test(expected = APIException.class)
+	public void retireSystemTask_withNullReasonAndNoExistingRetireReason_shouldThrow() {
+		tasksService.retireSystemTask(new SystemTask(), null);
+	}
+	
+	@Test(expected = APIException.class)
+	public void retireSystemTask_withEmptyReasonAndNoExistingRetireReason_shouldThrow() {
+		tasksService.retireSystemTask(new SystemTask(), "   ");
+	}
+	
+	@Test
+	public void retireSystemTask_withNullReasonAndExistingRetireReason_shouldReuseExisting() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setRetireReason("previously set");
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		tasksService.retireSystemTask(systemTask, null);
+		
+		assertThat(systemTask.getRetired(), is(true));
+		assertThat(systemTask.getRetireReason(), is("previously set"));
+		verify(dao).saveSystemTask(systemTask);
+	}
+	
+	@Test
+	public void retireSystemTask_withEmptyReasonAndExistingRetireReason_shouldReuseExisting() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setRetireReason("previously set");
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		tasksService.retireSystemTask(systemTask, " ");
+		
+		assertThat(systemTask.getRetireReason(), is("previously set"));
+	}
+	
+	@Test
+	public void retireSystemTask_shouldPreserveExistingDateRetired() {
+		SystemTask systemTask = new SystemTask();
+		Date existing = new Date(1000L);
+		systemTask.setDateRetired(existing);
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		tasksService.retireSystemTask(systemTask, "reason");
+		
+		assertThat(systemTask.getDateRetired(), is(sameInstance(existing)));
+	}
+	
+	@Test
+	public void retireSystemTask_shouldSetDateRetiredWhenNull() {
+		SystemTask systemTask = new SystemTask();
+		when(dao.saveSystemTask(systemTask)).thenReturn(systemTask);
+		
+		Date before = new Date();
+		tasksService.retireSystemTask(systemTask, "reason");
+		Date after = new Date();
+		
+		assertThat(systemTask.getDateRetired(), is(notNullValue()));
+		assertThat(systemTask.getDateRetired().getTime() >= before.getTime(), is(true));
+		assertThat(systemTask.getDateRetired().getTime() <= after.getTime(), is(true));
 	}
 }

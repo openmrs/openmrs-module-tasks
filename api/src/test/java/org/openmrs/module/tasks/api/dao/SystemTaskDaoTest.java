@@ -85,7 +85,8 @@ public class SystemTaskDaoTest extends BaseModuleContextSensitiveTest {
 		List<SystemTask> activeTasks = dao.getAllSystemTasks(false);
 		
 		assertThat(activeTasks.size(), is(2));
-		assertThat(activeTasks, hasItems(hasProperty("name", is("active-task-1")), hasProperty("name", is("active-task-2"))));
+		assertThat(activeTasks,
+		    hasItems(hasProperty("name", is("active-task-1")), hasProperty("name", is("active-task-2"))));
 		assertThat(activeTasks, not(hasItem(hasProperty("name", is("retired-task")))));
 	}
 	

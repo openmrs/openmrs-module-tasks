@@ -81,15 +81,14 @@ public class PlanDefinitionMapperTest {
 		systemTask.setName("high-priority-task");
 		systemTask.setTitle("High Priority Task");
 		systemTask.setPriority(Priority.HIGH);
-
+		
 		PlanDefinition result = mapper.toPlanDefinition(systemTask);
-
+		
 		assertThat(result.hasAction(), is(true));
 		assertThat(result.getActionFirstRep().hasExtension(), is(true));
-
+		
 		boolean foundPriorityExtension = result.getActionFirstRep().getExtension().stream()
-		        .anyMatch(ext -> ext.getUrl().contains("activity-priority")
-		                && ext.getValue().toString().contains("high"));
+		        .anyMatch(ext -> ext.getUrl().contains("activity-priority") && ext.getValue().toString().contains("high"));
 		assertThat(foundPriorityExtension, is(true));
 	}
 	
@@ -170,5 +169,137 @@ public class PlanDefinitionMapperTest {
 		
 		assertThat(result.getName(), is("machine-name"));
 		assertThat(result.getTitle(), is("Human Readable Title"));
+	}
+	
+	@Test
+	public void toPlanDefinition_withMediumPriority_shouldEmitMediumExtension() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid("uuid");
+		systemTask.setName("n");
+		systemTask.setTitle("t");
+		systemTask.setPriority(Priority.MEDIUM);
+		
+		PlanDefinition result = mapper.toPlanDefinition(systemTask);
+		
+		boolean found = result.getActionFirstRep().getExtension().stream()
+		        .anyMatch(ext -> ext.getUrl().contains("activity-priority") && ext.getValue().toString().contains("medium"));
+		assertThat(found, is(true));
+	}
+	
+	@Test
+	public void toPlanDefinition_withLowPriority_shouldEmitLowExtension() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid("uuid");
+		systemTask.setName("n");
+		systemTask.setTitle("t");
+		systemTask.setPriority(Priority.LOW);
+		
+		PlanDefinition result = mapper.toPlanDefinition(systemTask);
+		
+		boolean found = result.getActionFirstRep().getExtension().stream()
+		        .anyMatch(ext -> ext.getUrl().contains("activity-priority") && ext.getValue().toString().contains("low"));
+		assertThat(found, is(true));
+	}
+	
+	@Test
+	public void toPlanDefinition_withNullPriority_shouldNotEmitPriorityExtension() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid("uuid");
+		systemTask.setName("n");
+		systemTask.setTitle("t");
+		systemTask.setPriority(null);
+		
+		PlanDefinition result = mapper.toPlanDefinition(systemTask);
+		
+		assertThat(result.hasAction(), is(true));
+		boolean found = result.getActionFirstRep().getExtension().stream()
+		        .anyMatch(ext -> ext.getUrl().contains("activity-priority"));
+		assertThat(found, is(false));
+	}
+	
+	@Test
+	public void toPlanDefinition_withoutRationale_shouldNotEmitActionReason() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid("uuid");
+		systemTask.setName("n");
+		systemTask.setTitle("t");
+		// rationale not set
+		
+		PlanDefinition result = mapper.toPlanDefinition(systemTask);
+		
+		assertThat(result.hasAction(), is(true));
+		assertThat(result.getActionFirstRep().hasReason(), is(false));
+	}
+	
+	@Test
+	public void toPlanDefinition_withoutDescription_shouldNotEmitActionDescription() {
+		SystemTask systemTask = new SystemTask();
+		systemTask.setUuid("uuid");
+		systemTask.setName("n");
+		systemTask.setTitle("t");
+		
+		PlanDefinition result = mapper.toPlanDefinition(systemTask);
+		
+		assertThat(result.hasDescription(), is(false));
+		assertThat(result.getActionFirstRep().hasDescription(), is(false));
+	}
+	
+	@Test
+	public void toSystemTask_withPriorityExtension_shouldSetPriority() {
+		PlanDefinition planDefinition = new PlanDefinition();
+		planDefinition.setId("uuid");
+		planDefinition.setName("n");
+		PlanDefinition.PlanDefinitionActionComponent action = planDefinition.addAction();
+		org.hl7.fhir.r4.model.Extension ext = new org.hl7.fhir.r4.model.Extension();
+		ext.setUrl("http://openmrs.org/fhir/StructureDefinition/activity-priority");
+		ext.setValue(new org.hl7.fhir.r4.model.CodeType("high"));
+		action.addExtension(ext);
+		
+		SystemTask result = mapper.toSystemTask(planDefinition);
+		
+		assertThat(result.getPriority(), is(Priority.HIGH));
+	}
+	
+	@Test
+	public void toSystemTask_withUppercasePriorityExtension_shouldSetPriority() {
+		PlanDefinition planDefinition = new PlanDefinition();
+		planDefinition.setId("uuid");
+		planDefinition.setName("n");
+		PlanDefinition.PlanDefinitionActionComponent action = planDefinition.addAction();
+		org.hl7.fhir.r4.model.Extension ext = new org.hl7.fhir.r4.model.Extension();
+		ext.setUrl("http://openmrs.org/fhir/StructureDefinition/activity-priority");
+		ext.setValue(new org.hl7.fhir.r4.model.CodeType("MEDIUM"));
+		action.addExtension(ext);
+		
+		SystemTask result = mapper.toSystemTask(planDefinition);
+		
+		assertThat(result.getPriority(), is(Priority.MEDIUM));
+	}
+	
+	@Test
+	public void toSystemTask_withInvalidPriorityExtension_shouldLeavePriorityNull() {
+		PlanDefinition planDefinition = new PlanDefinition();
+		planDefinition.setId("uuid");
+		planDefinition.setName("n");
+		PlanDefinition.PlanDefinitionActionComponent action = planDefinition.addAction();
+		org.hl7.fhir.r4.model.Extension ext = new org.hl7.fhir.r4.model.Extension();
+		ext.setUrl("http://openmrs.org/fhir/StructureDefinition/activity-priority");
+		ext.setValue(new org.hl7.fhir.r4.model.CodeType("urgent"));
+		action.addExtension(ext);
+		
+		SystemTask result = mapper.toSystemTask(planDefinition);
+		
+		assertThat(result.getPriority(), is(nullValue()));
+	}
+	
+	@Test
+	public void toSystemTask_withoutActions_shouldLeavePriorityNull() {
+		PlanDefinition planDefinition = new PlanDefinition();
+		planDefinition.setId("uuid");
+		planDefinition.setName("n");
+		
+		SystemTask result = mapper.toSystemTask(planDefinition);
+		
+		assertThat(result.getPriority(), is(nullValue()));
 	}
 }

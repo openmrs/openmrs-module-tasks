@@ -91,27 +91,29 @@ public class CarePlanMapperAssigneeTest extends BaseModuleContextSensitiveTest {
 			// Insert directly via SQL for testing - use a simpler approach
 			try {
 				// First, get the next available ID
-				java.util.List<java.util.List<Object>> result = Context.getAdministrationService().executeSQL(
-				    "SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
+				java.util.List<java.util.List<Object>> result = Context.getAdministrationService()
+				        .executeSQL("SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
 				Integer nextId = 1;
 				if (result != null && !result.isEmpty() && result.get(0) != null && !result.get(0).isEmpty()) {
 					nextId = ((Number) result.get(0).get(0)).intValue();
 				}
 				
 				// Insert the ProviderRole
-				Context.getAdministrationService().executeSQL(
-				    String.format("INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')", nextId),
-				    false);
+				Context.getAdministrationService().executeSQL(String.format(
+				    "INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')",
+				    nextId), false);
 				Context.flushSession();
 				Context.clearSession();
 				
 				// Retrieve the saved ProviderRole
 				testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// If insertion fails, try to get ProviderRole by ID 1
 				try {
 					testProviderRole = providerService.getProviderRole(1);
-				} catch (Exception ex) {
+				}
+				catch (Exception ex) {
 					// If that also fails, the test will need to handle null ProviderRole
 					// But we'll create a minimal object for the test to use
 					testProviderRole = new ProviderRole();

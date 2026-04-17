@@ -103,27 +103,29 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 			// Insert directly via SQL for testing - use a simpler approach
 			try {
 				// First, get the next available ID
-				java.util.List<java.util.List<Object>> result = Context.getAdministrationService().executeSQL(
-				    "SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
+				java.util.List<java.util.List<Object>> result = Context.getAdministrationService()
+				        .executeSQL("SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
 				Integer nextId = 1;
 				if (result != null && !result.isEmpty() && result.get(0) != null && !result.get(0).isEmpty()) {
 					nextId = ((Number) result.get(0).get(0)).intValue();
 				}
 				
 				// Insert the ProviderRole
-				Context.getAdministrationService().executeSQL(
-				    String.format("INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')", nextId),
-				    false);
+				Context.getAdministrationService().executeSQL(String.format(
+				    "INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')",
+				    nextId), false);
 				Context.flushSession();
 				Context.clearSession();
 				
 				// Retrieve the saved ProviderRole
 				testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// If insertion fails, try to get ProviderRole by ID 1
 				try {
 					testProviderRole = providerService.getProviderRole(1);
-				} catch (Exception ex) {
+				}
+				catch (Exception ex) {
 					// If that also fails, the test will need to handle null ProviderRole
 					// But we'll create a minimal object for the test to use
 					testProviderRole = new ProviderRole();
@@ -249,8 +251,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	@Test
 	public void toCarePlan_withAssigneeProviderRoleId_shouldIncludePractitionerRoleReference() throws Exception {
 		// Skip this test if ProviderRole wasn't saved to database (can't resolve UUID)
-		org.junit.Assume.assumeTrue(
-		    "ProviderRole must be saved to database for this test",
+		org.junit.Assume.assumeTrue("ProviderRole must be saved to database for this test",
 		    testProviderRole != null && testProviderRole.getProviderRoleId() != null
 		            && providerService.getProviderRole(testProviderRole.getProviderRoleId()) != null);
 		
@@ -1039,4 +1040,201 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		return visit;
 	}
 	
+	
+	@Test(expected = NullPointerException.class)
+	public void toCarePlan_withNullTask_shouldThrow() {
+		// Current behavior: NPE on line that reads task.getUuid(). Documenting, not fixing.
+		carePlanMapper.toCarePlan(null);
+	}
+	
+	@Test
+	public void applyCarePlanToTask_withCarePlanWithNoActivities_shouldStillSetPatient() {
+		CarePlan carePlan = new CarePlan();
+		Reference patientRef = new Reference();
+		patientRef.setReference("Patient/" + testPatient.getUuid());
+		carePlan.setSubject(patientRef);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result, is(notNullValue()));
+		assertThat(result.getPatient(), is(testPatient));
+		assertThat(result.getDescription(), is(nullValue()));
+		assertThat(result.getStatus(), is(nullValue()));
+	}
+	
+	@Test
+	public void applyCarePlanToTask_withMultipleActivities_shouldReadOnlyFirst() {
+		// Document that only the first activity is considered.
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		CarePlan.CarePlanActivityDetailComponent firstDetail = carePlan.getActivityFirstRep().getDetail();
+		firstDetail.setDescription("first activity description");
+		
+		CarePlan.CarePlanActivityComponent secondActivity = new CarePlan.CarePlanActivityComponent();
+		CarePlan.CarePlanActivityDetailComponent secondDetail = new CarePlan.CarePlanActivityDetailComponent();
+		secondDetail.setDescription("second activity description");
+		secondActivity.setDetail(secondDetail);
+		carePlan.addActivity(secondActivity);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result.getDescription(), is("first activity description"));
+	}
+	
+	@Test
+	public void applyCarePlanToTask_onUpdate_shouldResetSomeFieldsButNotOthers() {
+		// Documents the asymmetric reset behavior on update: assignee, due date, rationale, priority,
+		// systemTask are cleared before re-applying; description/status/kind are not.
+		Task existing = new Task();
+		existing.setPatient(testPatient);
+		existing.setAssignee(testProvider);
+		existing.setAssigneeProviderRoleId(99);
+		existing.setDueDate(new java.util.Date());
+		existing.setDueDateType(DueDateType.DATE);
+		existing.setRationale("prior rationale");
+		existing.setPriority(Priority.HIGH);
+		existing.setDescription("prior description");
+		existing.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		existing.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		
+		CarePlan incoming = new CarePlan();
+		Reference patientRef = new Reference();
+		patientRef.setReference("Patient/" + testPatient.getUuid());
+		incoming.setSubject(patientRef);
+		// no activities, no description, no assignee
+		
+		Task result = carePlanMapper.applyCarePlanToTask(existing, incoming, testPatient, null, null);
+		
+		// Reset by mapper:
+		assertThat(result.getAssignee(), is(nullValue()));
+		assertThat(result.getAssigneeProviderRoleId(), is(nullValue()));
+		assertThat(result.getDueDate(), is(nullValue()));
+		assertThat(result.getDueDateType(), is(nullValue()));
+		assertThat(result.getRationale(), is(nullValue()));
+		assertThat(result.getPriority(), is(nullValue()));
+		// Not reset:
+		assertThat(result.getDescription(), is("prior description"));
+		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.NOTSTARTED));
+		assertThat(result.getKind(), is(CarePlan.CarePlanActivityKind.APPOINTMENT));
+	}
+	
+	@Test
+	public void toCarePlan_withNonCompletedStatus_shouldMapToActiveCarePlanStatus() {
+		// Documents the lossy status mapping: only COMPLETED maps to COMPLETED;
+		// everything else maps to ACTIVE.
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+		
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ACTIVE));
+	}
+	
+	@Test
+	public void toCarePlan_withCompletedStatus_shouldMapToCompletedCarePlanStatus() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
+		
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+		
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.COMPLETED));
+	}
+	
+	@Test
+	public void toCarePlan_withVoidedTask_shouldKeepCarePlanStatusActive() {
+		// Documents that voiding flips detail.status to CANCELLED but leaves the outer
+		// CarePlan.status at ACTIVE.
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setVoided(true);
+		
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+		
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ACTIVE));
+		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+	}
+	
+	@Test
+	public void applyCarePlanToTask_withNonCancelledStatus_shouldNotClearVoidedFlag() {
+		// Documents that once a task is voided, re-applying a CarePlan with a non-CANCELLED
+		// status does NOT un-void the task.
+		Task task = new Task();
+		task.setVoided(true);
+		task.setDateVoided(new java.util.Date(1000L));
+		
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		carePlan.getActivityFirstRep().getDetail().setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
+		
+		assertThat(result.getVoided(), is(true));
+		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
+	}
+	
+	// Note: scheduled[x] of type DateTime / Date is not a valid FHIR R4 choice for
+	// CarePlan.activity.detail.scheduled (only Timing / Period / string are), so those branches
+	// in the mapper are unreachable via the HAPI API and cannot be exercised here.
+	
+	@Test
+	public void applyCarePlanToTask_withScheduledTimingEvent_shouldReadFirstEvent() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		org.hl7.fhir.r4.model.Timing timing = new org.hl7.fhir.r4.model.Timing();
+		Date first = new Date(1000000000L);
+		Date second = new Date(2000000000L);
+		timing.addEvent(first);
+		timing.addEvent(second);
+		carePlan.getActivityFirstRep().getDetail().setScheduled(timing);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result.getDueDate(), is(first));
+		assertThat(result.getDueDateType(), is(DueDateType.DATE));
+	}
+	
+	@Test
+	public void applyCarePlanToTask_withScheduledTimingBoundsPeriod_shouldReadBoundsEnd() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		org.hl7.fhir.r4.model.Timing timing = new org.hl7.fhir.r4.model.Timing();
+		org.hl7.fhir.r4.model.Period bounds = new org.hl7.fhir.r4.model.Period();
+		Date end = new Date(1500000000L);
+		bounds.setEnd(end);
+		timing.getRepeat().setBounds(bounds);
+		carePlan.getActivityFirstRep().getDetail().setScheduled(timing);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result.getDueDate(), is(end));
+		assertThat(result.getDueDateType(), is(DueDateType.DATE));
+	}
+	
+	@Test
+	public void toCarePlan_thenApplyBack_shouldRoundTripCoreFields() {
+		// Happy-path round trip for DATE-typed tasks.
+		Task original = new Task();
+		original.setPatient(testPatient);
+		original.setDescription("round-trip description");
+		original.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		original.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		original.setPriority(Priority.HIGH);
+		Date due = new Date(1700000000000L);
+		original.setDueDate(due);
+		original.setDueDateType(DueDateType.DATE);
+		original.setAssignee(testProvider);
+		original.setRationale("the rationale");
+		
+		CarePlan carePlan = carePlanMapper.toCarePlan(original);
+		Task roundTripped = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(roundTripped.getDescription(), is("round-trip description"));
+		assertThat(roundTripped.getStatus(), is(CarePlan.CarePlanActivityStatus.NOTSTARTED));
+		assertThat(roundTripped.getKind(), is(CarePlan.CarePlanActivityKind.APPOINTMENT));
+		assertThat(roundTripped.getPriority(), is(Priority.HIGH));
+		assertThat(roundTripped.getDueDateType(), is(DueDateType.DATE));
+		assertThat(roundTripped.getDueDate(), is(due));
+		assertThat(roundTripped.getAssignee(), is(notNullValue()));
+		assertThat(roundTripped.getAssignee().getUuid(), is(testProvider.getUuid()));
+		assertThat(roundTripped.getRationale(), is("the rationale"));
+	}
 }
