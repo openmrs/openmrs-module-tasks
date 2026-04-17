@@ -48,9 +48,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -742,76 +742,43 @@ public class CarePlanMapper {
 		if (patient == null || referenceVisit == null || referenceVisit.getStartDatetime() == null) {
 			return null;
 		}
-		
+
+		List<Visit> visits;
 		try {
-			java.util.List<Visit> visits = null;
-			
-			// Try to get visits directly from VisitService first
-			try {
-				VisitService visitService = Context.getVisitService();
-				java.lang.reflect.Method method = visitService.getClass().getMethod("getVisits", Patient.class, Boolean.TYPE,
-				    Boolean.TYPE);
-				visits = (java.util.List<Visit>) method.invoke(visitService, patient, false, true);
-			}
-			catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException e) {
-				// Try alternative method signatures
-				try {
-					org.openmrs.api.VisitService visitService = Context.getVisitService();
-					// Try getVisitsByPatient which might be available
-					java.lang.reflect.Method method = visitService.getClass().getMethod("getVisitsByPatient", Patient.class);
-					visits = (java.util.List<Visit>) method.invoke(visitService, patient);
-				}
-				catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException e2) {
-					// If that doesn't work, try getting encounters and extracting visits
-					try {
-						EncounterService encounterService = Context.getEncounterService();
-						java.util.List<Encounter> encounters = encounterService.getEncountersByPatient(patient);
-						if (encounters != null) {
-							visits = encounters.stream().map(Encounter::getVisit).filter(Objects::nonNull).distinct()
-							        .collect(java.util.stream.Collectors.toList());
-						}
-					}
-					catch (Exception ex2) {
-						log.debug("Unable to get visits via encounters", ex2);
-					}
-				}
-			}
-			
-			if (visits != null && !visits.isEmpty()) {
-				Date refStart = referenceVisit.getStartDatetime();
-				Visit nextVisit = null;
-				
-				for (Visit visit : visits) {
-					Date visitStart = visit.getStartDatetime();
-					if (visitStart != null && visitStart.after(refStart)) {
-						// Make sure it's not the reference visit itself
-						boolean isReference = false;
-						if (visit.getVisitId() != null && referenceVisit.getVisitId() != null
-						        && visit.getVisitId().equals(referenceVisit.getVisitId())) {
-							isReference = true;
-						} else if (visit.getUuid() != null && referenceVisit.getUuid() != null
-						        && visit.getUuid().equals(referenceVisit.getUuid())) {
-							isReference = true;
-						}
-						
-						if (!isReference) {
-							// Find the earliest visit after the reference visit
-							if (nextVisit == null || (nextVisit.getStartDatetime() != null
-							        && visitStart.before(nextVisit.getStartDatetime()))) {
-								nextVisit = visit;
-							}
-						}
-					}
-				}
-				
-				return nextVisit;
-			}
+			visits = Context.getVisitService().getVisitsByPatient(patient);
 		}
 		catch (Exception ex) {
 			log.warn("Unable to find next visit after reference visit {}", referenceVisit.getUuid(), ex);
+			return null;
 		}
-		
-		return null;
+
+		if (visits == null || visits.isEmpty()) {
+			return null;
+		}
+
+		Date refStart = referenceVisit.getStartDatetime();
+		Visit nextVisit = null;
+
+		for (Visit visit : visits) {
+			Date visitStart = visit.getStartDatetime();
+			if (visitStart == null || !visitStart.after(refStart)) {
+				continue;
+			}
+
+			boolean isReferenceVisit = (visit.getVisitId() != null
+			        && visit.getVisitId().equals(referenceVisit.getVisitId()))
+			        || (visit.getUuid() != null && visit.getUuid().equals(referenceVisit.getUuid()));
+			if (isReferenceVisit) {
+				continue;
+			}
+
+			if (nextVisit == null
+			        || (nextVisit.getStartDatetime() != null && visitStart.before(nextVisit.getStartDatetime()))) {
+				nextVisit = visit;
+			}
+		}
+
+		return nextVisit;
 	}
 	
 	/**
