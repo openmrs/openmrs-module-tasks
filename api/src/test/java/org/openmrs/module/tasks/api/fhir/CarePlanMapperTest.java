@@ -1081,9 +1081,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void applyCarePlanToTask_onUpdate_shouldResetSomeFieldsButNotOthers() {
-		// Documents the asymmetric reset behavior on update: assignee, due date, rationale, priority,
-		// systemTask are cleared before re-applying; description/status/kind are not.
+	public void applyCarePlanToTask_onUpdate_shouldResetAllWritableFields() {
 		Task existing = new Task();
 		existing.setPatient(testPatient);
 		existing.setAssignee(testProvider);
@@ -1095,26 +1093,24 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		existing.setDescription("prior description");
 		existing.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		existing.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
-		
+
 		CarePlan incoming = new CarePlan();
 		Reference patientRef = new Reference();
 		patientRef.setReference("Patient/" + testPatient.getUuid());
 		incoming.setSubject(patientRef);
 		// no activities, no description, no assignee
-		
+
 		Task result = carePlanMapper.applyCarePlanToTask(existing, incoming, testPatient, null, null);
-		
-		// Reset by mapper:
+
 		assertThat(result.getAssignee(), is(nullValue()));
 		assertThat(result.getAssigneeProviderRoleId(), is(nullValue()));
 		assertThat(result.getDueDate(), is(nullValue()));
 		assertThat(result.getDueDateType(), is(nullValue()));
 		assertThat(result.getRationale(), is(nullValue()));
 		assertThat(result.getPriority(), is(nullValue()));
-		// Not reset:
-		assertThat(result.getDescription(), is("prior description"));
-		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.NOTSTARTED));
-		assertThat(result.getKind(), is(CarePlan.CarePlanActivityKind.APPOINTMENT));
+		assertThat(result.getDescription(), is(nullValue()));
+		assertThat(result.getStatus(), is(nullValue()));
+		assertThat(result.getKind(), is(nullValue()));
 	}
 	
 	@Test

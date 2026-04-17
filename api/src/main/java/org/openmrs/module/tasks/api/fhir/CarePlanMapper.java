@@ -297,10 +297,13 @@ public class CarePlanMapper {
 		task.setPatient(patient);
 		task.setAssignee(null);
 		task.setAssigneeProviderRoleId(null);
+		task.setDescription(null);
 		task.setDueDate(null);
 		task.setDueDateType(null);
 		task.setDueDateReferenceVisit(null);
 		task.setRationale(null);
+		task.setStatus(null);
+		task.setKind(null);
 		task.setPriority(null);
 		task.setSystemTask(null);
 		
