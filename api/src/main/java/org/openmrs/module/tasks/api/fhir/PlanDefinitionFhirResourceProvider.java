@@ -80,7 +80,7 @@ public class PlanDefinitionFhirResourceProvider implements IResourceProvider {
 	@Search
 	public List<PlanDefinition> search(@OptionalParam(name = "status") String status) {
 		List<PlanDefinition> planDefinitions = new ArrayList<>();
-
+		
 		// Determine whether to include retired based on status parameter
 		boolean includeRetired = false;
 		if (StringUtils.isNotBlank(status)) {
@@ -92,9 +92,9 @@ public class PlanDefinitionFhirResourceProvider implements IResourceProvider {
 				return planDefinitions;
 			}
 		}
-
+		
 		List<SystemTask> systemTasks = tasksService.getAllSystemTasks(includeRetired);
-
+		
 		for (SystemTask systemTask : systemTasks) {
 			// If status filter is specified, apply it
 			if (StringUtils.isNotBlank(status)) {
@@ -106,13 +106,13 @@ public class PlanDefinitionFhirResourceProvider implements IResourceProvider {
 					continue;
 				}
 			}
-
+			
 			PlanDefinition planDefinition = planDefinitionMapper.toPlanDefinition(systemTask);
 			if (planDefinition != null) {
 				planDefinitions.add(planDefinition);
 			}
 		}
-
+		
 		return planDefinitions;
 	}
 	

@@ -25,8 +25,8 @@ import java.util.List;
 public interface TasksService extends OpenmrsService {
 	
 	/**
-	 * Returns a task by uuid. It can be called by any authenticated user. It is fetched in read
-	 * only transaction.
+	 * Returns a task by uuid. It can be called by any authenticated user. It is fetched in read only
+	 * transaction.
 	 * 
 	 * @param uuid
 	 * @return

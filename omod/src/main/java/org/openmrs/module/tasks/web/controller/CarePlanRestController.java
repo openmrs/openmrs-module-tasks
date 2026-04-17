@@ -54,9 +54,7 @@ public class CarePlanRestController {
 		bundle.setTotal(carePlans.size());
 		carePlans.forEach(carePlan -> bundle.addEntry().setResource(carePlan));
 		
-		return ResponseEntity.ok()
-		        .contentType(MediaType.APPLICATION_JSON)
-		        .body(encodeResource(bundle));
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(bundle));
 	}
 	
 	@GetMapping(path = "/{carePlanId}", produces = MediaType.APPLICATION_JSON_VALUE)

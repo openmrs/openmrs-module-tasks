@@ -89,15 +89,15 @@ public class PlanDefinitionMapper {
 		if (systemTask.getPriority() != null) {
 			Extension priorityExtension = new Extension();
 			priorityExtension.setUrl(ACTIVITY_PRIORITY_EXTENSION_URL);
-			priorityExtension.setValue(new org.hl7.fhir.r4.model.CodeType(systemTask.getPriority().name()
-			        .toLowerCase(Locale.ROOT)));
+			priorityExtension
+			        .setValue(new org.hl7.fhir.r4.model.CodeType(systemTask.getPriority().name().toLowerCase(Locale.ROOT)));
 			action.addExtension(priorityExtension);
 		}
 		
 		// Add default assignee role as participant
 		if (systemTask.getDefaultAssigneeProviderRoleId() != null) {
-			ProviderRole providerRole = Context.getProviderService().getProviderRole(
-			    systemTask.getDefaultAssigneeProviderRoleId());
+			ProviderRole providerRole = Context.getProviderService()
+			        .getProviderRole(systemTask.getDefaultAssigneeProviderRoleId());
 			if (providerRole != null) {
 				PlanDefinition.PlanDefinitionActionParticipantComponent participant = new PlanDefinition.PlanDefinitionActionParticipantComponent();
 				participant.setType(PlanDefinition.ActionParticipantType.PRACTITIONER);
