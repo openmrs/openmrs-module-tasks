@@ -9,9 +9,13 @@
 	<artifactId>tasks-omod</artifactId>
 	<packaging>jar</packaging>
 	<name>Tasks OMOD</name>
-	<description>Omod submodule for Tasks</description>
+	<description>OMOD submodule for Tasks</description>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.openmrs.web</groupId>
+			<artifactId>openmrs-web</artifactId>
+		</dependency>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>${project.parent.artifactId}-api</artifactId>
