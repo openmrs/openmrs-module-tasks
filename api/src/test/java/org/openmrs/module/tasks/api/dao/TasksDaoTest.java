@@ -120,7 +120,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	@Test
 	public void getTasksByPatientId_shouldExcludeVoidedTasksByDefault() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task active = new Task();
 		active.setDescription("Active Task");
 		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
@@ -128,7 +128,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
-
+		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
 		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
@@ -137,21 +137,21 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
 		dao.saveTask(voided);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks.size(), is(1));
 		assertThat(tasks, hasItem(hasProperty("description", is("Active Task"))));
 		assertThat(tasks, not(hasItem(hasProperty("description", is("Voided Task")))));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_withIncludeVoidedFalse_shouldExcludeVoidedTasks() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task active = new Task();
 		active.setDescription("Active Task");
 		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
@@ -159,7 +159,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
-
+		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
 		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
@@ -168,20 +168,20 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
 		dao.saveTask(voided);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId(), false);
-
+		
 		assertThat(tasks.size(), is(1));
 		assertThat(tasks, hasItem(hasProperty("description", is("Active Task"))));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_withIncludeVoidedTrue_shouldReturnVoidedAndNonVoidedTasks() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task active = new Task();
 		active.setDescription("Active Task");
 		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
@@ -189,7 +189,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
-
+		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
 		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
@@ -198,32 +198,32 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
 		dao.saveTask(voided);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId(), true);
-
+		
 		assertThat(tasks.size(), is(2));
 		assertThat(tasks,
 		    hasItems(hasProperty("description", is("Active Task")), hasProperty("description", is("Voided Task"))));
 		assertThat(tasks, hasItem(hasProperty("voided", is(true))));
 		assertThat(tasks, hasItem(hasProperty("voided", is(false))));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_forPatientWithNoTasks_shouldReturnEmptyList() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks, is(empty()));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_forNonExistentPatientId_shouldReturnEmptyList() {
 		List<Task> tasks = dao.getTasksByPatientId(Integer.MAX_VALUE);
-
+		
 		assertThat(tasks, is(empty()));
 	}
 }

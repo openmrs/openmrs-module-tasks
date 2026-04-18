@@ -49,7 +49,7 @@ public class TasksDao {
 	public List<Task> getTasksByPatientId(Integer patientId) {
 		return getTasksByPatientId(patientId, false);
 	}
-
+	
 	public List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) {
 		String hql = "from tasks.Task t where t.patient.patientId = :patientId";
 		if (!includeVoided) {

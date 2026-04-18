@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * This class contains the logic that is run every time this module is either started or shutdown
  */
 public class TasksActivator extends BaseModuleActivator {
-
+	
 	private static final Logger log = LoggerFactory.getLogger(TasksActivator.class);
 	
 	/**

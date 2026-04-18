@@ -106,7 +106,7 @@ public class CarePlanMapper {
 		CarePlan carePlan = new CarePlan();
 		
 		carePlan.setId(task.getUuid());
-
+		
 		carePlan.setStatus(mapTaskStatusToCarePlanStatus(task));
 		
 		carePlan.setIntent(CarePlan.CarePlanIntent.PLAN);
@@ -253,20 +253,20 @@ public class CarePlanMapper {
 		}
 		
 		carePlan.addActivity(activity);
-
+		
 		return carePlan;
 	}
-
+	
 	private static CarePlan.CarePlanStatus mapTaskStatusToCarePlanStatus(Task task) {
 		if (Boolean.TRUE.equals(task.getVoided())) {
 			return CarePlan.CarePlanStatus.REVOKED;
 		}
-
+		
 		CarePlan.CarePlanActivityStatus activityStatus = task.getStatus();
 		if (activityStatus == null) {
 			return CarePlan.CarePlanStatus.ACTIVE;
 		}
-
+		
 		switch (activityStatus) {
 			case COMPLETED:
 				return CarePlan.CarePlanStatus.COMPLETED;
@@ -283,7 +283,7 @@ public class CarePlanMapper {
 				return CarePlan.CarePlanStatus.ACTIVE;
 		}
 	}
-
+	
 	/**
 	 * Converts a FHIR CarePlan resource to a Task entity.
 	 *
@@ -765,7 +765,7 @@ public class CarePlanMapper {
 		if (patient == null || referenceVisit == null || referenceVisit.getStartDatetime() == null) {
 			return null;
 		}
-
+		
 		List<Visit> visits;
 		try {
 			visits = Context.getVisitService().getVisitsByPatient(patient);
@@ -774,33 +774,32 @@ public class CarePlanMapper {
 			log.warn("Unable to find next visit after reference visit {}", referenceVisit.getUuid(), ex);
 			return null;
 		}
-
+		
 		if (visits == null || visits.isEmpty()) {
 			return null;
 		}
-
+		
 		Date refStart = referenceVisit.getStartDatetime();
 		Visit nextVisit = null;
-
+		
 		for (Visit visit : visits) {
 			Date visitStart = visit.getStartDatetime();
 			if (visitStart == null || !visitStart.after(refStart)) {
 				continue;
 			}
-
-			boolean isReferenceVisit = (visit.getVisitId() != null
-			        && visit.getVisitId().equals(referenceVisit.getVisitId()))
+			
+			boolean isReferenceVisit = (visit.getVisitId() != null && visit.getVisitId().equals(referenceVisit.getVisitId()))
 			        || (visit.getUuid() != null && visit.getUuid().equals(referenceVisit.getUuid()));
 			if (isReferenceVisit) {
 				continue;
 			}
-
+			
 			if (nextVisit == null
 			        || (nextVisit.getStartDatetime() != null && visitStart.before(nextVisit.getStartDatetime()))) {
 				nextVisit = visit;
 			}
 		}
-
+		
 		return nextVisit;
 	}
 	

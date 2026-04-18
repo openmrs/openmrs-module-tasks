@@ -1040,7 +1040,6 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		return visit;
 	}
 	
-	
 	@Test(expected = NullPointerException.class)
 	public void toCarePlan_withNullTask_shouldThrow() {
 		// Current behavior: NPE on line that reads task.getUuid(). Documenting, not fixing.
@@ -1093,15 +1092,15 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		existing.setDescription("prior description");
 		existing.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		existing.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
-
+		
 		CarePlan incoming = new CarePlan();
 		Reference patientRef = new Reference();
 		patientRef.setReference("Patient/" + testPatient.getUuid());
 		incoming.setSubject(patientRef);
 		// no activities, no description, no assignee
-
+		
 		Task result = carePlanMapper.applyCarePlanToTask(existing, incoming, testPatient, null, null);
-
+		
 		assertThat(result.getAssignee(), is(nullValue()));
 		assertThat(result.getAssigneeProviderRoleId(), is(nullValue()));
 		assertThat(result.getDueDate(), is(nullValue()));
@@ -1118,76 +1117,76 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
 	}
-
+	
 	@Test
 	public void toCarePlan_withStoppedStatus_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.STOPPED);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
 	}
-
+	
 	@Test
 	public void toCarePlan_withOnHoldStatus_shouldMapToOnHoldCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.ONHOLD);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ONHOLD));
 	}
-
+	
 	@Test
 	public void toCarePlan_withEnteredInErrorStatus_shouldMapToEnteredInErrorCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ENTEREDINERROR));
 	}
-
+	
 	@Test
 	public void toCarePlan_withInProgressStatus_shouldMapToActiveCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ACTIVE));
 	}
-
+	
 	@Test
 	public void toCarePlan_withCompletedStatus_shouldMapToCompletedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.COMPLETED));
 	}
-
+	
 	@Test
 	public void toCarePlan_withVoidedTask_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		task.setVoided(true);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
 		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
 	}

@@ -55,7 +55,7 @@ public interface TasksService extends OpenmrsService {
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
 	List<Task> getTasksByPatientId(Integer patientId) throws APIException;
-
+	
 	/**
 	 * Returns tasks for a patient, optionally including voided tasks.
 	 *
