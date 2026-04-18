@@ -19,10 +19,12 @@ import org.openmrs.module.tasks.Task;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import java.util.List;
 import java.util.Properties;
@@ -116,35 +118,112 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void getTasksByPatientId_shouldIncludeVoidedTasks() {
+	public void getTasksByPatientId_shouldExcludeVoidedTasksByDefault() {
 		Patient patient = patientService.getPatient(2);
-		
-		Task task1 = new Task();
-		task1.setDescription("Active Task");
-		task1.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task1.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
-		task1.setPatient(patient);
-		task1.setVoided(false);
-		dao.saveTask(task1);
-		
-		Task task2 = new Task();
-		task2.setDescription("Voided Task");
-		task2.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		task2.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
-		task2.setPatient(patient);
-		task2.setVoided(true);
-		task2.setDateVoided(new java.util.Date());
-		dao.saveTask(task2);
-		
+
+		Task active = new Task();
+		active.setDescription("Active Task");
+		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setPatient(patient);
+		active.setVoided(false);
+		dao.saveTask(active);
+
+		Task voided = new Task();
+		voided.setDescription("Voided Task");
+		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setPatient(patient);
+		voided.setVoided(true);
+		voided.setDateVoided(new java.util.Date());
+		dao.saveTask(voided);
+
 		Context.flushSession();
 		Context.clearSession();
-		
+
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
-		
+
+		assertThat(tasks.size(), is(1));
+		assertThat(tasks, hasItem(hasProperty("description", is("Active Task"))));
+		assertThat(tasks, not(hasItem(hasProperty("description", is("Voided Task")))));
+	}
+
+	@Test
+	public void getTasksByPatientId_withIncludeVoidedFalse_shouldExcludeVoidedTasks() {
+		Patient patient = patientService.getPatient(2);
+
+		Task active = new Task();
+		active.setDescription("Active Task");
+		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setPatient(patient);
+		active.setVoided(false);
+		dao.saveTask(active);
+
+		Task voided = new Task();
+		voided.setDescription("Voided Task");
+		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setPatient(patient);
+		voided.setVoided(true);
+		voided.setDateVoided(new java.util.Date());
+		dao.saveTask(voided);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getTasksByPatientId(patient.getId(), false);
+
+		assertThat(tasks.size(), is(1));
+		assertThat(tasks, hasItem(hasProperty("description", is("Active Task"))));
+	}
+
+	@Test
+	public void getTasksByPatientId_withIncludeVoidedTrue_shouldReturnVoidedAndNonVoidedTasks() {
+		Patient patient = patientService.getPatient(2);
+
+		Task active = new Task();
+		active.setDescription("Active Task");
+		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setPatient(patient);
+		active.setVoided(false);
+		dao.saveTask(active);
+
+		Task voided = new Task();
+		voided.setDescription("Voided Task");
+		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setPatient(patient);
+		voided.setVoided(true);
+		voided.setDateVoided(new java.util.Date());
+		dao.saveTask(voided);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getTasksByPatientId(patient.getId(), true);
+
 		assertThat(tasks.size(), is(2));
 		assertThat(tasks,
 		    hasItems(hasProperty("description", is("Active Task")), hasProperty("description", is("Voided Task"))));
 		assertThat(tasks, hasItem(hasProperty("voided", is(true))));
 		assertThat(tasks, hasItem(hasProperty("voided", is(false))));
+	}
+
+	@Test
+	public void getTasksByPatientId_forPatientWithNoTasks_shouldReturnEmptyList() {
+		Patient patient = patientService.getPatient(2);
+
+		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
+
+		assertThat(tasks, is(empty()));
+	}
+
+	@Test
+	public void getTasksByPatientId_forNonExistentPatientId_shouldReturnEmptyList() {
+		List<Task> tasks = dao.getTasksByPatientId(Integer.MAX_VALUE);
+
+		assertThat(tasks, is(empty()));
 	}
 }

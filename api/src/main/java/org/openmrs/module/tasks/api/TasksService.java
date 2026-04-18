@@ -47,15 +47,25 @@ public interface TasksService extends OpenmrsService {
 	Task saveTask(Task task) throws APIException;
 	
 	/**
-	 * Returns all tasks for a patient. It can be called by any authenticated user. It is fetched in
-	 * read only transaction.
-	 * 
-	 * @param patientId
-	 * @return
+	 * Returns all non-voided tasks for a patient.
+	 *
+	 * @param patientId the patient id
+	 * @return the non-voided tasks for the patient
 	 * @throws APIException
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
 	List<Task> getTasksByPatientId(Integer patientId) throws APIException;
+
+	/**
+	 * Returns tasks for a patient, optionally including voided tasks.
+	 *
+	 * @param patientId the patient id
+	 * @param includeVoided whether to include voided tasks in the result
+	 * @return the tasks for the patient
+	 * @throws APIException
+	 */
+	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
+	List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) throws APIException;
 	
 	/**
 	 * Voids a task with the provided reason.

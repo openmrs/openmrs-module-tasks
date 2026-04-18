@@ -47,8 +47,15 @@ public class TasksDao {
 	}
 	
 	public List<Task> getTasksByPatientId(Integer patientId) {
-		return getCurrentSession().createQuery("from tasks.Task t where t.patient.patientId = :patientId", Task.class)
-		        .setParameter("patientId", patientId).getResultList();
+		return getTasksByPatientId(patientId, false);
+	}
+
+	public List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) {
+		String hql = "from tasks.Task t where t.patient.patientId = :patientId";
+		if (!includeVoided) {
+			hql += " and t.voided = false";
+		}
+		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId).getResultList();
 	}
 	
 	public SystemTask getSystemTaskByUuid(String uuid) {

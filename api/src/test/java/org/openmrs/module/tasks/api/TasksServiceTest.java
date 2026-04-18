@@ -93,14 +93,31 @@ public class TasksServiceTest {
 		Task task1 = new Task();
 		task1.setDescription("Task 1");
 		tasks.add(task1);
-		
+
 		when(dao.getTasksByPatientId(patientId)).thenReturn(tasks);
-		
+
 		//When
 		List<Task> foundTasks = tasksService.getTasksByPatientId(patientId);
-		
+
 		//Then
 		verify(dao).getTasksByPatientId(patientId);
+		assertThat(foundTasks.size(), is(1));
+		assertThat(foundTasks.get(0).getDescription(), is("Task 1"));
+	}
+
+	@Test
+	public void getTasksByPatientId_withIncludeVoided_shouldDelegateToDao() {
+		Integer patientId = 2;
+		List<Task> tasks = new ArrayList<>();
+		Task task1 = new Task();
+		task1.setDescription("Task 1");
+		tasks.add(task1);
+
+		when(dao.getTasksByPatientId(patientId, true)).thenReturn(tasks);
+
+		List<Task> foundTasks = tasksService.getTasksByPatientId(patientId, true);
+
+		verify(dao).getTasksByPatientId(patientId, true);
 		assertThat(foundTasks.size(), is(1));
 		assertThat(foundTasks.get(0).getDescription(), is("Task 1"));
 	}
