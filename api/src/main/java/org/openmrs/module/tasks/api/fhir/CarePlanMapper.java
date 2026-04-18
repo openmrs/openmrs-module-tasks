@@ -106,12 +106,8 @@ public class CarePlanMapper {
 		CarePlan carePlan = new CarePlan();
 		
 		carePlan.setId(task.getUuid());
-		
-		if (task.getStatus() == CarePlan.CarePlanActivityStatus.COMPLETED) {
-			carePlan.setStatus(CarePlan.CarePlanStatus.COMPLETED);
-		} else {
-			carePlan.setStatus(CarePlan.CarePlanStatus.ACTIVE);
-		}
+
+		carePlan.setStatus(mapTaskStatusToCarePlanStatus(task));
 		
 		carePlan.setIntent(CarePlan.CarePlanIntent.PLAN);
 		
@@ -257,10 +253,37 @@ public class CarePlanMapper {
 		}
 		
 		carePlan.addActivity(activity);
-		
+
 		return carePlan;
 	}
-	
+
+	private static CarePlan.CarePlanStatus mapTaskStatusToCarePlanStatus(Task task) {
+		if (Boolean.TRUE.equals(task.getVoided())) {
+			return CarePlan.CarePlanStatus.REVOKED;
+		}
+
+		CarePlan.CarePlanActivityStatus activityStatus = task.getStatus();
+		if (activityStatus == null) {
+			return CarePlan.CarePlanStatus.ACTIVE;
+		}
+
+		switch (activityStatus) {
+			case COMPLETED:
+				return CarePlan.CarePlanStatus.COMPLETED;
+			case CANCELLED:
+			case STOPPED:
+				return CarePlan.CarePlanStatus.REVOKED;
+			case ONHOLD:
+				return CarePlan.CarePlanStatus.ONHOLD;
+			case ENTEREDINERROR:
+				return CarePlan.CarePlanStatus.ENTEREDINERROR;
+			case UNKNOWN:
+				return CarePlan.CarePlanStatus.UNKNOWN;
+			default:
+				return CarePlan.CarePlanStatus.ACTIVE;
+		}
+	}
+
 	/**
 	 * Converts a FHIR CarePlan resource to a Task entity.
 	 *

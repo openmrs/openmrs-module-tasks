@@ -1114,41 +1114,81 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void toCarePlan_withNonCompletedStatus_shouldMapToActiveCarePlanStatus() {
-		// Documents the lossy status mapping: only COMPLETED maps to COMPLETED;
-		// everything else maps to ACTIVE.
+	public void toCarePlan_withCancelledStatus_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
+	}
+
+	@Test
+	public void toCarePlan_withStoppedStatus_shouldMapToRevokedCarePlanStatus() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.STOPPED);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
+	}
+
+	@Test
+	public void toCarePlan_withOnHoldStatus_shouldMapToOnHoldCarePlanStatus() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.ONHOLD);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ONHOLD));
+	}
+
+	@Test
+	public void toCarePlan_withEnteredInErrorStatus_shouldMapToEnteredInErrorCarePlanStatus() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ENTEREDINERROR));
+	}
+
+	@Test
+	public void toCarePlan_withInProgressStatus_shouldMapToActiveCarePlanStatus() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ACTIVE));
 	}
-	
+
 	@Test
 	public void toCarePlan_withCompletedStatus_shouldMapToCompletedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
+
 		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.COMPLETED));
 	}
-	
+
 	@Test
-	public void toCarePlan_withVoidedTask_shouldKeepCarePlanStatusActive() {
-		// Documents that voiding flips detail.status to CANCELLED but leaves the outer
-		// CarePlan.status at ACTIVE.
+	public void toCarePlan_withVoidedTask_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		task.setVoided(true);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
-		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ACTIVE));
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
 		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
 	}
 	

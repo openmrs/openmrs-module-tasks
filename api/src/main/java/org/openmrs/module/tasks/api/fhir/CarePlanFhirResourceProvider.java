@@ -50,16 +50,6 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	
 	private CarePlanMapper carePlanMapper;
 	
-	public CarePlanFhirResourceProvider() {
-	}
-	
-	public CarePlanFhirResourceProvider(TasksService tasksService, PatientService patientService,
-	    ProviderService providerService) {
-		this.tasksService = tasksService;
-		this.patientService = patientService;
-		this.providerService = providerService;
-	}
-	
 	public void setCarePlanMapper(CarePlanMapper carePlanMapper) {
 		this.carePlanMapper = carePlanMapper;
 	}

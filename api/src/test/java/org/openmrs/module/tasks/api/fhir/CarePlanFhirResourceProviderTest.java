@@ -90,7 +90,10 @@ public class CarePlanFhirResourceProviderTest {
 		testProvider = new Provider();
 		testProvider.setUuid(PROVIDER_UUID);
 		
-		provider = new CarePlanFhirResourceProvider(tasksService, patientService, providerService);
+		provider = new CarePlanFhirResourceProvider();
+		provider.setTasksService(tasksService);
+		provider.setPatientService(patientService);
+		provider.setProviderService(providerService);
 		provider.setCarePlanMapper(carePlanMapper);
 	}
 	
