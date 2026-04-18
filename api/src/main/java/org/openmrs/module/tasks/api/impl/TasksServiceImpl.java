@@ -17,7 +17,6 @@ import org.openmrs.module.tasks.api.TasksService;
 import org.openmrs.module.tasks.api.dao.TasksDao;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 
 public class TasksServiceImpl extends BaseOpenmrsService implements TasksService {
@@ -61,17 +60,11 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 		if (task == null) {
 			throw new APIException("Task cannot be null");
 		}
-		if (Boolean.TRUE.equals(task.getVoided())) {
-			return;
-		}
 		if (voidReason == null || voidReason.trim().isEmpty()) {
 			throw new APIException("Void reason is required");
 		}
-		task.setVoided(true);
-		task.setVoidReason(voidReason);
-		if (task.getDateVoided() == null) {
-			task.setDateVoided(new Date());
-		}
+		// voided, voidedBy, dateVoided, voidReason are populated by OpenMRS's RequiredDataAdvice
+		// (BaseVoidHandler) before this method runs.
 		dao.saveTask(task);
 	}
 	
@@ -109,16 +102,10 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 			throw new APIException("SystemTask cannot be null");
 		}
 		if (retireReason == null || retireReason.trim().isEmpty()) {
-			retireReason = systemTask.getRetireReason();
-		}
-		if (retireReason == null || retireReason.trim().isEmpty()) {
 			throw new APIException("Retire reason is required");
 		}
-		systemTask.setRetired(true);
-		systemTask.setRetireReason(retireReason);
-		if (systemTask.getDateRetired() == null) {
-			systemTask.setDateRetired(new Date());
-		}
+		// retired, retiredBy, dateRetired, retireReason are populated by OpenMRS's RequiredDataAdvice
+		// (BaseRetireHandler) before this method runs.
 		dao.saveSystemTask(systemTask);
 	}
 }
