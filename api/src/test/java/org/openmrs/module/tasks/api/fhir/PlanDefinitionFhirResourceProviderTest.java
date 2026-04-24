@@ -93,9 +93,32 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 	public void read_shouldReturnNullForNonExistentSystemTask() {
 		// When: Reading a non-existent ID
 		PlanDefinition result = provider.read(new IdType("non-existent-uuid"));
-		
+
 		// Then: Should return null
 		assertThat(result, is(nullValue()));
+	}
+
+	@Test
+	public void read_withBlankIdPart_shouldReturnNull() {
+		assertThat(provider.read(new IdType("   ")), is(nullValue()));
+	}
+
+	@Test
+	public void read_withEmptyIdPart_shouldReturnNull() {
+		assertThat(provider.read(new IdType("")), is(nullValue()));
+	}
+
+	@Test
+	public void read_withNullId_shouldReturnNull() {
+		assertThat(provider.read(null), is(nullValue()));
+	}
+
+	@Test
+	public void search_withNullStatus_whenNoSystemTasks_shouldReturnEmptyList() {
+		// Given a freshly-migrated schema with no system tasks seeded
+		List<PlanDefinition> results = provider.search(null);
+
+		assertThat(results, is(empty()));
 	}
 	
 	@Test
