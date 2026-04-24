@@ -12,6 +12,8 @@ package org.openmrs.module.tasks.web.controller;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,12 +71,6 @@ public class CarePlanRestController {
 	@GetMapping(path = "/{carePlanId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> read(@PathVariable("carePlanId") String carePlanId) {
 		CarePlan carePlan = carePlanFhirResourceProvider.read(new IdType("CarePlan", carePlanId));
-		
-		if (carePlan == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
-			        .body(errorNode("CarePlan not found for ID: " + carePlanId));
-		}
-		
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(carePlan));
 	}
 	
@@ -92,6 +88,17 @@ public class CarePlanRestController {
 		
 		return ResponseEntity.status(HttpStatus.CREATED).headers(headers).contentType(MediaType.APPLICATION_JSON)
 		        .body(encodeResource(savedCarePlan));
+	}
+	
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<JsonNode> handleResourceNotFound(ResourceNotFoundException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
+		        .body(errorNode(ex.getMessage()));
+	}
+	
+	@ExceptionHandler(InvalidRequestException.class)
+	public ResponseEntity<JsonNode> handleInvalidRequest(InvalidRequestException ex) {
+		return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorNode(ex.getMessage()));
 	}
 	
 	@ExceptionHandler(IllegalArgumentException.class)

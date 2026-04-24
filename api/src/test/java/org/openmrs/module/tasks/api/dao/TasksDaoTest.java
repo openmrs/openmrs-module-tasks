@@ -25,6 +25,8 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.util.List;
 import java.util.Properties;
@@ -54,6 +56,53 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	@Autowired
 	ProviderService providerService;
 	
+	@Test
+	public void saveTask_onExistingEntity_shouldUpdateInPlace() {
+		Task task = new Task();
+		task.setDescription("initial");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setPatient(patientService.getPatient(2));
+		dao.saveTask(task);
+
+		Context.flushSession();
+		Integer originalId = task.getId();
+		String originalUuid = task.getUuid();
+		assertThat(originalId, is(notNullValue()));
+
+		Task reloaded = dao.getTaskByUuid(originalUuid);
+		reloaded.setDescription("updated");
+		reloaded.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		dao.saveTask(reloaded);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		Task afterUpdate = dao.getTaskByUuid(originalUuid);
+		assertThat(afterUpdate.getId(), is(originalId));
+		assertThat(afterUpdate.getDescription(), is("updated"));
+		assertThat(afterUpdate.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
+	}
+
+	@Test
+	public void deleteTask_shouldRemoveRowFromDb() {
+		Task task = new Task();
+		task.setDescription("to be deleted");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setPatient(patientService.getPatient(2));
+		dao.saveTask(task);
+		Context.flushSession();
+		String uuid = task.getUuid();
+		assertThat(dao.getTaskByUuid(uuid), is(notNullValue()));
+
+		dao.deleteTask(task);
+		Context.flushSession();
+		Context.clearSession();
+
+		assertThat(dao.getTaskByUuid(uuid), is(nullValue()));
+	}
+
 	@Test
 	public void saveTask_shouldSaveAllPropertiesInDb() {
 		//Given
@@ -225,5 +274,44 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		List<Task> tasks = dao.getTasksByPatientId(Integer.MAX_VALUE);
 		
 		assertThat(tasks, is(empty()));
+	}
+	
+	@Test
+	public void getTasksByPatientId_shouldReturnTasksOrderedByDateCreatedDescending() {
+		Patient patient = patientService.getPatient(2);
+
+		Task older = new Task();
+		older.setDescription("older task");
+		older.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		older.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		older.setPatient(patient);
+		older.setDateCreated(new java.util.Date(1000000L));
+		dao.saveTask(older);
+
+		Task middle = new Task();
+		middle.setDescription("middle task");
+		middle.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		middle.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		middle.setPatient(patient);
+		middle.setDateCreated(new java.util.Date(2000000L));
+		dao.saveTask(middle);
+
+		Task newer = new Task();
+		newer.setDescription("newer task");
+		newer.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		newer.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		newer.setPatient(patient);
+		newer.setDateCreated(new java.util.Date(3000000L));
+		dao.saveTask(newer);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
+
+		assertThat(tasks.size(), is(3));
+		assertThat(tasks.get(0).getDescription(), is("newer task"));
+		assertThat(tasks.get(1).getDescription(), is("middle task"));
+		assertThat(tasks.get(2).getDescription(), is("older task"));
 	}
 }

@@ -10,6 +10,7 @@
 package org.openmrs.module.tasks.api.fhir;
 
 import ca.uhn.fhir.rest.annotation.Create;
+import ca.uhn.fhir.rest.annotation.Delete;
 import ca.uhn.fhir.rest.annotation.IdParam;
 import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
@@ -17,6 +18,8 @@ import ca.uhn.fhir.rest.annotation.Search;
 import ca.uhn.fhir.rest.annotation.Update;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.CarePlan;
@@ -70,7 +73,7 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		CarePlanContext context = resolveCarePlanContext(carePlan);
 		
 		if (context.getPatient() == null) {
-			throw new IllegalArgumentException("Patient reference is required");
+			throw new InvalidRequestException("Patient reference is required");
 		}
 		
 		Task task = carePlanMapper.toTask(carePlan, context.getPatient(), context.getAssignee(),
@@ -103,19 +106,19 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	@Update
 	public MethodOutcome update(@IdParam IdType id, @ResourceParam CarePlan carePlan) {
 		if (id == null || StringUtils.isBlank(id.getIdPart())) {
-			throw new IllegalArgumentException("CarePlan ID is required");
+			throw new InvalidRequestException("CarePlan ID is required");
 		}
 		
 		Task existingTask = tasksService.getTaskByUuid(id.getIdPart());
 		if (existingTask == null) {
-			throw new IllegalArgumentException("Task not found for CarePlan ID " + id.getIdPart());
+			throw new ResourceNotFoundException(id);
 		}
 		
 		CarePlanContext context = resolveCarePlanContext(carePlan);
 		
 		Patient patient = context.getPatient() != null ? context.getPatient() : existingTask.getPatient();
 		if (patient == null) {
-			throw new IllegalArgumentException("Patient reference is required");
+			throw new InvalidRequestException("Patient reference is required");
 		}
 		
 		// Ensure CarePlan ID matches the resource being updated
@@ -135,7 +138,7 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	
 	/**
 	 * Reads a CarePlan resource by ID.
-	 * 
+	 *
 	 * @param id the CarePlan ID
 	 * @return the CarePlan resource
 	 */
@@ -143,9 +146,36 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	public CarePlan read(@IdParam IdType id) {
 		Task task = tasksService.getTaskByUuid(id.getIdPart());
 		if (task == null) {
-			return null;
+			throw new ResourceNotFoundException(id);
 		}
 		return carePlanMapper.toCarePlan(task);
+	}
+	
+	/**
+	 * Deletes (voids) a CarePlan resource by ID. Maps to the task's underlying void operation — the
+	 * stored {@code task.status} is unchanged; voiding is tracked via {@code voided}/{@code voidedBy}
+	 * /{@code dateVoided}/{@code voidReason} and surfaced on read as {@code CarePlan.status=REVOKED} /
+	 * {@code detail.status=CANCELLED}.
+	 *
+	 * @param id the CarePlan ID
+	 * @return a MethodOutcome for the deletion
+	 */
+	@Delete
+	public MethodOutcome delete(@IdParam IdType id) {
+		if (id == null || StringUtils.isBlank(id.getIdPart())) {
+			throw new InvalidRequestException("CarePlan ID is required");
+		}
+		
+		Task task = tasksService.getTaskByUuid(id.getIdPart());
+		if (task == null) {
+			throw new ResourceNotFoundException(id);
+		}
+		
+		tasksService.voidTask(task, "Voided via FHIR DELETE");
+		
+		MethodOutcome outcome = new MethodOutcome();
+		outcome.setId(new IdType("CarePlan", id.getIdPart()));
+		return outcome;
 	}
 	
 	/**

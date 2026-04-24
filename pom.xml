@@ -62,11 +62,12 @@
         <openmrsPlatformVersion>2.8.0</openmrsPlatformVersion>
         <fhir2Version>2.8.0</fhir2Version>
 		<restVersion>2.50.0</restVersion>
+		<servletApiVersion>3.1.0</servletApiVersion>
+		<jsonPathVersion>2.9.0</jsonPathVersion>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- fhir2-api dependency management - use fhir2-api instead of bundling HAPI FHIR directly -->
             <dependency>
                 <groupId>org.openmrs.module</groupId>
                 <artifactId>fhir2-api</artifactId>
@@ -78,6 +79,18 @@
 				<artifactId>webservices.rest-omod</artifactId>
 				<version>${restVersion}</version>
 				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>javax.servlet-api</artifactId>
+				<version>${servletApiVersion}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.jayway.jsonpath</groupId>
+				<artifactId>json-path</artifactId>
+				<version>${jsonPathVersion}</version>
+				<scope>test</scope>
 			</dependency>
         </dependencies>
     </dependencyManagement>

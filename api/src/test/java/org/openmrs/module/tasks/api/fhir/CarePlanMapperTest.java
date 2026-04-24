@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Calendar;
@@ -1040,9 +1040,8 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		return visit;
 	}
 	
-	@Test(expected = NullPointerException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void toCarePlan_withNullTask_shouldThrow() {
-		// Current behavior: NPE on line that reads task.getUuid(). Documenting, not fixing.
 		carePlanMapper.toCarePlan(null);
 	}
 	
@@ -1271,5 +1270,253 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		assertThat(roundTripped.getAssignee(), is(notNullValue()));
 		assertThat(roundTripped.getAssignee().getUuid(), is(testProvider.getUuid()));
 		assertThat(roundTripped.getRationale(), is("the rationale"));
+	}
+
+	@Test
+	public void toCarePlan_withAppointmentKind_shouldReferenceAppointment() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.APPOINTMENT, "Appointment");
+	}
+
+	@Test
+	public void toCarePlan_withCommunicationRequestKind_shouldReferenceCommunicationRequest() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.COMMUNICATIONREQUEST, "CommunicationRequest");
+	}
+
+	@Test
+	public void toCarePlan_withDeviceRequestKind_shouldReferenceDeviceRequest() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.DEVICEREQUEST, "DeviceRequest");
+	}
+
+	@Test
+	public void toCarePlan_withMedicationRequestKind_shouldReferenceMedicationRequest() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.MEDICATIONREQUEST, "MedicationRequest");
+	}
+
+	@Test
+	public void toCarePlan_withNutritionOrderKind_shouldReferenceNutritionOrder() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.NUTRITIONORDER, "NutritionOrder");
+	}
+
+	@Test
+	public void toCarePlan_withServiceRequestKind_shouldReferenceServiceRequest() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.SERVICEREQUEST, "ServiceRequest");
+	}
+
+	@Test
+	public void toCarePlan_withTaskKind_shouldReferenceTask() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.TASK, "Task");
+	}
+
+	@Test
+	public void toCarePlan_withVisionPrescriptionKind_shouldReferenceVisionPrescription() {
+		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.VISIONPRESCRIPTION, "VisionPrescription");
+	}
+
+	@Test
+	public void toCarePlan_withNullKind_shouldNotSetActivityReference() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.hasActivity(), is(true));
+		assertThat(carePlan.getActivityFirstRep().hasReference(), is(false));
+	}
+
+	private void assertKindMapsToResourceType(CarePlan.CarePlanActivityKind kind, String expectedType) {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setKind(kind);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.hasActivity(), is(true));
+		Reference activityRef = carePlan.getActivityFirstRep().getReference();
+		assertThat(activityRef, is(notNullValue()));
+		assertThat(activityRef.getType(), is(expectedType));
+	}
+
+	// ---------- URL-prefixed performer references ----------
+
+	@Test
+	public void applyCarePlanToTask_withAbsoluteUrlPractitionerReference_shouldResolveProvider() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		Reference performer = new Reference();
+		performer.setReference("http://remote.example.org/fhir/Practitioner/" + testProvider.getUuid());
+		carePlan.getActivityFirstRep().getDetail().addPerformer(performer);
+		// Override the @Before stub (which splits on a bare "Practitioner/" substring) to use
+		// HAPI's URL-aware idPart extraction so the absolute URL actually resolves.
+		when(practitionerReferenceTranslator.toOpenmrsType(any(Reference.class))).thenAnswer(invocation -> {
+			Reference ref = (Reference) invocation.getArguments()[0];
+			return providerService.getProviderByUuid(ref.getReferenceElement().getIdPart());
+		});
+
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+
+		assertThat(result.getAssignee(), is(notNullValue()));
+		assertThat(result.getAssignee().getUuid(), is(testProvider.getUuid()));
+	}
+
+	@Test
+	public void applyCarePlanToTask_withAbsoluteUrlPractitionerRoleReference_shouldResolveRole() throws Exception {
+		org.junit.Assume.assumeTrue("ProviderRole must be saved to database for this test",
+		    testProviderRole != null && testProviderRole.getProviderRoleId() != null
+		            && providerService.getProviderRole(testProviderRole.getProviderRoleId()) != null);
+
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		Reference performer = new Reference();
+		performer.setReference("http://remote.example.org/fhir/PractitionerRole/" + testProviderRole.getUuid());
+		carePlan.getActivityFirstRep().getDetail().addPerformer(performer);
+
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+
+		assertThat(result.getAssigneeProviderRoleId(), is(testProviderRole.getProviderRoleId()));
+	}
+
+	// ---------- findNextVisitAfterReference edge cases (exercised via toCarePlan on NEXT_VISIT tasks) ----------
+
+	@Test
+	public void toCarePlan_withNextVisitTask_whenOnlyReferenceVisitExists_shouldProducePeriodWithoutEnd() throws Exception {
+		// Zero candidates after the reference → no follow-up visit, so period has no end.
+		VisitService visitService = Context.getVisitService();
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DAY_OF_YEAR, -1);
+		Date start = cal.getTime();
+
+		Visit onlyVisit = createTestVisit(testPatient, start, null);
+		visitService.saveVisit(onlyVisit);
+		Context.flushSession();
+
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setDescription("Test");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setDueDateType(DueDateType.NEXT_VISIT);
+		task.setDueDateReferenceVisit(onlyVisit);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
+		assertThat(detail.hasScheduled(), is(true));
+		org.hl7.fhir.r4.model.Period period = (org.hl7.fhir.r4.model.Period) detail.getScheduled();
+		assertThat(period.hasEnd(), is(false));
+	}
+
+	@Test
+	public void toCarePlan_withNextVisitTask_whenReferenceVisitHasNullStart_shouldNotSetScheduledPeriod() {
+		Visit dangling = new Visit();
+		dangling.setPatient(testPatient);
+		dangling.setStartDatetime(null);
+		dangling.setUuid("dangling-visit-uuid");
+
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setDescription("Test");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setDueDateType(DueDateType.NEXT_VISIT);
+		task.setDueDateReferenceVisit(dangling);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
+		assertThat(detail.hasScheduled(), is(false));
+		org.hl7.fhir.r4.model.Extension dueKind = detail
+		        .getExtensionByUrl("http://openmrs.org/fhir/StructureDefinition/activity-dueKind");
+		assertThat(dueKind, is(notNullValue()));
+	}
+
+	@Test
+	public void toCarePlan_withNextVisitTask_shouldPickEarliestVisitAfterReference() throws Exception {
+		// Two visits occur after the reference; the earlier one should win.
+		VisitService visitService = Context.getVisitService();
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DAY_OF_YEAR, -10);
+		Date firstStart = cal.getTime();
+		cal.add(Calendar.DAY_OF_YEAR, 1);
+		Date firstEnd = cal.getTime();
+
+		cal.add(Calendar.DAY_OF_YEAR, 1);
+		Date earlyNextStart = cal.getTime();
+		cal.add(Calendar.DAY_OF_YEAR, 1);
+		Date earlyNextEnd = cal.getTime();
+
+		cal.add(Calendar.DAY_OF_YEAR, 3);
+		Date lateNextStart = cal.getTime();
+		cal.add(Calendar.DAY_OF_YEAR, 1);
+		Date lateNextEnd = cal.getTime();
+
+		Visit firstVisit = createTestVisit(testPatient, firstStart, firstEnd);
+		Visit earlyNext = createTestVisit(testPatient, earlyNextStart, earlyNextEnd);
+		Visit lateNext = createTestVisit(testPatient, lateNextStart, lateNextEnd);
+		visitService.saveVisit(firstVisit);
+		visitService.saveVisit(earlyNext);
+		visitService.saveVisit(lateNext);
+		Context.flushSession();
+		Context.clearSession();
+
+		firstVisit = visitService.getVisitByUuid(firstVisit.getUuid());
+
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setDescription("Test");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setDueDateType(DueDateType.NEXT_VISIT);
+		task.setDueDateReferenceVisit(firstVisit);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
+		org.hl7.fhir.r4.model.Period period = (org.hl7.fhir.r4.model.Period) detail.getScheduled();
+		assertThat(period.hasEnd(), is(true));
+		// period.end matches earlyNextEnd (within 1s for DB rounding)
+		assertThat(Math.abs(period.getEnd().getTime() - earlyNextEnd.getTime()), is(lessThan(1000L)));
+	}
+
+	// ---------- description vs rationale direction-specific tests ----------
+
+	@Test
+	public void toCarePlan_shouldMapTaskDescriptionToDetailDescription() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setDescription("task description text");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getActivityFirstRep().getDetail().getDescription(), is("task description text"));
+	}
+
+	@Test
+	public void toCarePlan_shouldMapTaskRationaleToCarePlanDescription() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setRationale("the clinical rationale");
+		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getDescription(), is("the clinical rationale"));
+	}
+
+	@Test
+	public void applyCarePlanToTask_shouldMapDetailDescriptionToTaskDescription() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		carePlan.getActivityFirstRep().getDetail().setDescription("detail description text");
+
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+
+		assertThat(result.getDescription(), is("detail description text"));
+	}
+
+	@Test
+	public void applyCarePlanToTask_shouldMapCarePlanDescriptionToTaskRationale() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		carePlan.setDescription("outer rationale text");
+
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+
+		assertThat(result.getRationale(), is("outer rationale text"));
 	}
 }

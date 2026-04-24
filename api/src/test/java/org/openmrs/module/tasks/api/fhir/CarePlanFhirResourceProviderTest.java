@@ -10,6 +10,8 @@
 package org.openmrs.module.tasks.api.fhir;
 
 import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Reference;
@@ -36,7 +38,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -104,14 +105,14 @@ public class CarePlanFhirResourceProviderTest {
 	
 	// ---------- create ----------
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = InvalidRequestException.class)
 	public void create_withoutPatientReference_shouldThrow() {
 		CarePlan carePlan = new CarePlan();
 		
 		provider.create(carePlan);
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = InvalidRequestException.class)
 	public void create_withUnknownPatient_shouldThrow() {
 		CarePlan carePlan = carePlanWithSubject(PATIENT_UUID);
 		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(null);
@@ -230,18 +231,18 @@ public class CarePlanFhirResourceProviderTest {
 	
 	// ---------- update ----------
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = InvalidRequestException.class)
 	public void update_withNullId_shouldThrow() {
 		provider.update(null, new CarePlan());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = InvalidRequestException.class)
 	public void update_withBlankId_shouldThrow() {
 		provider.update(new IdType("CarePlan", ""), new CarePlan());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
-	public void update_whenTaskNotFound_shouldThrow() {
+	@Test(expected = ResourceNotFoundException.class)
+	public void update_whenTaskNotFound_shouldThrowResourceNotFound() {
 		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
 		
 		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), carePlanWithSubject(PATIENT_UUID));
@@ -267,7 +268,7 @@ public class CarePlanFhirResourceProviderTest {
 		verify(carePlanMapper).applyCarePlanToTask(eq(existing), eq(incoming), eq(testPatient), any(), any());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = InvalidRequestException.class)
 	public void update_withoutPatientInPayloadOrExisting_shouldThrow() {
 		Task existing = new Task();
 		existing.setUuid(CARE_PLAN_UUID);
@@ -316,14 +317,70 @@ public class CarePlanFhirResourceProviderTest {
 		assertThat(result, is(sameInstance(expected)));
 	}
 	
-	@Test
-	public void read_whenTaskNotFound_shouldReturnNull() {
+	@Test(expected = ResourceNotFoundException.class)
+	public void read_whenTaskNotFound_shouldThrowResourceNotFound() {
 		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
 		
-		CarePlan result = provider.read(new IdType("CarePlan", CARE_PLAN_UUID));
+		provider.read(new IdType("CarePlan", CARE_PLAN_UUID));
+	}
+	
+	@Test
+	public void read_whenTaskNotFound_shouldNotInvokeMapper() {
+		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
 		
-		assertThat(result, is(nullValue()));
+		try {
+			provider.read(new IdType("CarePlan", CARE_PLAN_UUID));
+		}
+		catch (ResourceNotFoundException expected) {
+			// expected
+		}
 		verify(carePlanMapper, never()).toCarePlan(any());
+	}
+	
+	// ---------- delete ----------
+	
+	@Test(expected = InvalidRequestException.class)
+	public void delete_withNullId_shouldThrow() {
+		provider.delete(null);
+	}
+	
+	@Test(expected = InvalidRequestException.class)
+	public void delete_withBlankId_shouldThrow() {
+		provider.delete(new IdType("CarePlan", ""));
+	}
+	
+	@Test(expected = ResourceNotFoundException.class)
+	public void delete_whenTaskNotFound_shouldThrowResourceNotFound() {
+		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
+		
+		provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
+	}
+	
+	@Test
+	public void delete_whenTaskExists_shouldVoidTaskAndReturnOutcome() {
+		Task task = new Task();
+		task.setUuid(CARE_PLAN_UUID);
+		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(task);
+		
+		MethodOutcome outcome = provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
+		
+		verify(tasksService).voidTask(eq(task), eq("Voided via FHIR DELETE"));
+		assertThat(outcome, is(notNullValue()));
+		assertThat(outcome.getId().getResourceType(), is("CarePlan"));
+		assertThat(outcome.getId().getIdPart(), is(CARE_PLAN_UUID));
+	}
+	
+	@Test
+	public void delete_shouldNotTouchTaskStatus() {
+		// Voiding is orthogonal to task.status — the stored status stays whatever it was.
+		Task task = new Task();
+		task.setUuid(CARE_PLAN_UUID);
+		task.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(task);
+		
+		provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
+		
+		assertThat(task.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
 	}
 	
 	// ---------- search ----------

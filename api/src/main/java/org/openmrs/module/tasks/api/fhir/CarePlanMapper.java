@@ -103,8 +103,12 @@ public class CarePlanMapper {
 	 * @return the FHIR CarePlan resource
 	 */
 	public CarePlan toCarePlan(Task task) {
+		if (task == null) {
+			throw new IllegalArgumentException("Task must not be null");
+		}
+
 		CarePlan carePlan = new CarePlan();
-		
+
 		carePlan.setId(task.getUuid());
 		
 		carePlan.setStatus(mapTaskStatusToCarePlanStatus(task));

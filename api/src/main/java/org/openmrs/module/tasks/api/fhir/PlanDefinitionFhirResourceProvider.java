@@ -20,6 +20,7 @@ import org.hl7.fhir.r4.model.PlanDefinition;
 import org.openmrs.module.fhir2.api.annotations.R4Provider;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.api.TasksService;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,8 @@ public class PlanDefinitionFhirResourceProvider implements IResourceProvider {
 	public PlanDefinitionFhirResourceProvider() {
 	}
 	
-	public PlanDefinitionFhirResourceProvider(TasksService tasksService, PlanDefinitionMapper planDefinitionMapper) {
+	public PlanDefinitionFhirResourceProvider(@Qualifier("tasks.TasksService") TasksService tasksService,
+	    PlanDefinitionMapper planDefinitionMapper) {
 		this.tasksService = tasksService;
 		this.planDefinitionMapper = planDefinitionMapper;
 	}
