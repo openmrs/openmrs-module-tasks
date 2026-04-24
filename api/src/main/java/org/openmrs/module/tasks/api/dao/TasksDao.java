@@ -55,6 +55,7 @@ public class TasksDao {
 		if (!includeVoided) {
 			hql += " and t.voided = false";
 		}
+		hql += " order by t.dateCreated desc";
 		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId).getResultList();
 	}
 	
