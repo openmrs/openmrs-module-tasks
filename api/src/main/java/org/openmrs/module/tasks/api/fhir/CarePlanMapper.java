@@ -142,7 +142,7 @@ public class CarePlanMapper {
 		CarePlanActivityDetailComponent detail = new CarePlanActivityDetailComponent();
 		
 		if (Boolean.TRUE.equals(task.getVoided())) {
-			detail.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+			detail.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
 		} else if (task.getStatus() != null) {
 			detail.setStatus(task.getStatus());
 		}
@@ -263,7 +263,7 @@ public class CarePlanMapper {
 	
 	private static CarePlan.CarePlanStatus mapTaskStatusToCarePlanStatus(Task task) {
 		if (Boolean.TRUE.equals(task.getVoided())) {
-			return CarePlan.CarePlanStatus.REVOKED;
+			return CarePlan.CarePlanStatus.ENTEREDINERROR;
 		}
 		
 		CarePlan.CarePlanActivityStatus activityStatus = task.getStatus();
@@ -358,15 +358,10 @@ public class CarePlanMapper {
 				CarePlanActivityDetailComponent detail = activity.getDetail();
 				
 				if (detail.hasStatus()) {
-					CarePlan.CarePlanActivityStatus status = detail.getStatus();
-					task.setStatus(status);
-					
-					if (status == CarePlan.CarePlanActivityStatus.CANCELLED) {
-						task.setVoided(true);
-						if (task.getDateVoided() == null) {
-							task.setDateVoided(new Date());
-						}
-					}
+					// Voiding is a separate concern driven through voidTask / FHIR DELETE. An incoming
+					// status — including CANCELLED — is a legitimate clinical state change and must not
+					// flip task.voided.
+					task.setStatus(detail.getStatus());
 				}
 				
 				if (detail.hasDescription()) {

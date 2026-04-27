@@ -198,10 +198,7 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 			Patient patient = patientService.getPatientByUuid(patientIdStr);
 			
 			if (patient != null) {
-				// Get tasks for patient using patient ID
-				List<Task> tasks = tasksService.getTasksByPatientId(patient.getPatientId());
-				
-				// Convert to CarePlans
+				List<Task> tasks = tasksService.getActiveTasksByPatientId(patient.getPatientId());
 				for (Task task : tasks) {
 					carePlans.add(carePlanMapper.toCarePlan(task));
 				}

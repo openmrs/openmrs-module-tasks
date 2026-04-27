@@ -346,72 +346,85 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void applyCarePlanToTask_withCancelledStatus_shouldSetVoidedToTrue() {
+	public void applyCarePlanToTask_withCancelledStatus_shouldSetStatusAndLeaveVoidedFalse() {
 		CarePlan carePlan = createCarePlanWithoutPerformers();
 		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
 		detail.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		
+
 		Task task = new Task();
 		task.setVoided(false);
-		
+
 		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
-		
-		assertThat(result.getVoided(), is(true));
-		assertThat(result.getDateVoided(), is(notNullValue()));
+
 		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+		assertThat(result.getVoided(), is(false));
+		assertThat(result.getDateVoided(), is(nullValue()));
 	}
-	
+
 	@Test
-	public void applyCarePlanToTask_withCancelledStatus_shouldSetDateVoidedIfNotAlreadySet() {
+	public void applyCarePlanToTask_withCancelledStatusOnVoidedTask_shouldNotTouchVoidedMetadata() {
 		CarePlan carePlan = createCarePlanWithoutPerformers();
-		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
-		detail.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		
+		carePlan.getActivityFirstRep().getDetail().setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+
 		Task task = new Task();
-		task.setVoided(false);
 		java.util.Date existingDate = new java.util.Date(1000L);
+		task.setVoided(true);
 		task.setDateVoided(existingDate);
-		
+
 		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
-		
+
+		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
 		assertThat(result.getVoided(), is(true));
 		assertThat(result.getDateVoided(), is(existingDate));
 	}
-	
+
 	@Test
-	public void toCarePlan_withVoidedTask_shouldSetActivityDetailStatusToCancelled() {
+	public void toCarePlan_withVoidedTask_shouldSetActivityDetailStatusToEnteredInError() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
 		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		task.setVoided(true);
 		task.setDateVoided(new java.util.Date());
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
+
 		assertThat(carePlan, is(notNullValue()));
 		assertThat(carePlan.hasActivity(), is(true));
 		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
 		assertThat(detail.hasStatus(), is(true));
-		assertThat(detail.getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+		assertThat(detail.getStatus(), is(CarePlan.CarePlanActivityStatus.ENTEREDINERROR));
 	}
-	
+
 	@Test
-	public void toCarePlan_withNonVoidedTask_shouldNotSetActivityDetailStatusToCancelled() {
+	public void toCarePlan_withNonVoidedTask_shouldPassThroughTaskStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
 		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		task.setVoided(false);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
+
 		assertThat(carePlan, is(notNullValue()));
 		assertThat(carePlan.hasActivity(), is(true));
 		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
 		assertThat(detail.hasStatus(), is(true));
 		assertThat(detail.getStatus(), is(CarePlan.CarePlanActivityStatus.NOTSTARTED));
-		assertThat(detail.getStatus(), is(not(CarePlan.CarePlanActivityStatus.CANCELLED)));
+	}
+
+	@Test
+	public void toCarePlan_withCancelledStatusNonVoidedTask_shouldPassCancelledThrough() {
+		Task task = new Task();
+		task.setPatient(testPatient);
+		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		task.setVoided(false);
+
+		CarePlan carePlan = carePlanMapper.toCarePlan(task);
+
+		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(),
+		    is(CarePlan.CarePlanActivityStatus.CANCELLED));
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
 	}
 	
 	private CarePlan createCarePlanWithPractitionerPerformer(String providerUuid) {
@@ -1178,16 +1191,17 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void toCarePlan_withVoidedTask_shouldMapToRevokedCarePlanStatus() {
+	public void toCarePlan_withVoidedTask_shouldMapToEnteredInErrorCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
 		task.setVoided(true);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
-		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.REVOKED));
-		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+
+		assertThat(carePlan.getStatus(), is(CarePlan.CarePlanStatus.ENTEREDINERROR));
+		assertThat(carePlan.getActivityFirstRep().getDetail().getStatus(),
+		    is(CarePlan.CarePlanActivityStatus.ENTEREDINERROR));
 	}
 	
 	@Test

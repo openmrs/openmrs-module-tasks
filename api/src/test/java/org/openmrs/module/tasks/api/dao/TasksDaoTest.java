@@ -277,6 +277,112 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
+	public void getActiveTasksByPatientId_shouldExcludeCancelledAndEnteredInErrorTasks() {
+		Patient patient = patientService.getPatient(2);
+
+		Task active = new Task();
+		active.setDescription("active");
+		active.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setPatient(patient);
+		dao.saveTask(active);
+
+		Task completed = new Task();
+		completed.setDescription("completed");
+		completed.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
+		completed.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		completed.setPatient(patient);
+		dao.saveTask(completed);
+
+		Task stopped = new Task();
+		stopped.setDescription("stopped");
+		stopped.setStatus(CarePlan.CarePlanActivityStatus.STOPPED);
+		stopped.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		stopped.setPatient(patient);
+		dao.saveTask(stopped);
+
+		Task cancelled = new Task();
+		cancelled.setDescription("cancelled");
+		cancelled.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		cancelled.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		cancelled.setPatient(patient);
+		dao.saveTask(cancelled);
+
+		Task enteredInError = new Task();
+		enteredInError.setDescription("entered-in-error");
+		enteredInError.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
+		enteredInError.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		enteredInError.setPatient(patient);
+		dao.saveTask(enteredInError);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
+
+		assertThat(tasks, hasItems(hasProperty("description", is("active")),
+		    hasProperty("description", is("completed")), hasProperty("description", is("stopped"))));
+		assertThat(tasks, not(hasItem(hasProperty("description", is("cancelled")))));
+		assertThat(tasks, not(hasItem(hasProperty("description", is("entered-in-error")))));
+	}
+
+	@Test
+	public void getActiveTasksByPatientId_shouldIncludeTasksWithNullStatus() {
+		Patient patient = patientService.getPatient(2);
+
+		Task nullStatus = new Task();
+		nullStatus.setDescription("no status");
+		nullStatus.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		nullStatus.setPatient(patient);
+		dao.saveTask(nullStatus);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
+
+		assertThat(tasks, hasItem(hasProperty("description", is("no status"))));
+	}
+
+	@Test
+	public void getActiveTasksByPatientId_shouldExcludeVoidedTasks() {
+		Patient patient = patientService.getPatient(2);
+
+		Task active = new Task();
+		active.setDescription("active");
+		active.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setPatient(patient);
+		dao.saveTask(active);
+
+		Task voided = new Task();
+		voided.setDescription("voided");
+		voided.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setPatient(patient);
+		voided.setVoided(true);
+		voided.setDateVoided(new java.util.Date());
+		dao.saveTask(voided);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
+
+		assertThat(tasks, hasItem(hasProperty("description", is("active"))));
+		assertThat(tasks, not(hasItem(hasProperty("description", is("voided")))));
+	}
+
+	@Test
+	public void getActiveTasksByPatientId_forPatientWithNoTasks_shouldReturnEmptyList() {
+		Patient patient = patientService.getPatient(2);
+
+		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
+
+		assertThat(tasks, is(empty()));
+	}
+
+	@Test
 	public void getTasksByPatientId_shouldReturnTasksOrderedByDateCreatedDescending() {
 		Patient patient = patientService.getPatient(2);
 

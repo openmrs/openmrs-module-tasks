@@ -95,6 +95,11 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	}
 
 	@Test(expected = APIAuthenticationException.class)
+	public void getActiveTasksByPatientId_withoutViewPrivilege_shouldThrow() {
+		tasksService.getActiveTasksByPatientId(2);
+	}
+
+	@Test(expected = APIAuthenticationException.class)
 	public void saveTask_withoutManagePrivilege_shouldThrow() {
 		Task task = new Task();
 		task.setPatient(patientService.getPatient(2));

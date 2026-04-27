@@ -408,14 +408,14 @@ public class CarePlanFhirResourceProviderTest {
 		List<CarePlan> result = provider.search(PATIENT_UUID);
 		
 		assertThat(result, is(empty()));
-		verify(tasksService, never()).getTasksByPatientId(any(Integer.class));
+		verify(tasksService, never()).getActiveTasksByPatientId(any(Integer.class));
 	}
 	
 	@Test
 	public void search_withPatientPrefix_shouldStripPrefixAndLookup() {
 		Task task = new Task();
 		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(testPatient);
-		when(tasksService.getTasksByPatientId(testPatient.getPatientId())).thenReturn(Collections.singletonList(task));
+		when(tasksService.getActiveTasksByPatientId(testPatient.getPatientId())).thenReturn(Collections.singletonList(task));
 		when(carePlanMapper.toCarePlan(task)).thenReturn(new CarePlan());
 		
 		List<CarePlan> result = provider.search("Patient/" + PATIENT_UUID);
@@ -428,7 +428,7 @@ public class CarePlanFhirResourceProviderTest {
 	public void search_withRawUuid_shouldLookupDirectly() {
 		Task task = new Task();
 		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(testPatient);
-		when(tasksService.getTasksByPatientId(testPatient.getPatientId())).thenReturn(Collections.singletonList(task));
+		when(tasksService.getActiveTasksByPatientId(testPatient.getPatientId())).thenReturn(Collections.singletonList(task));
 		when(carePlanMapper.toCarePlan(task)).thenReturn(new CarePlan());
 		
 		List<CarePlan> result = provider.search(PATIENT_UUID);
@@ -444,7 +444,7 @@ public class CarePlanFhirResourceProviderTest {
 		CarePlan cp1 = new CarePlan();
 		CarePlan cp2 = new CarePlan();
 		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(testPatient);
-		when(tasksService.getTasksByPatientId(testPatient.getPatientId())).thenReturn(Arrays.asList(t1, t2));
+		when(tasksService.getActiveTasksByPatientId(testPatient.getPatientId())).thenReturn(Arrays.asList(t1, t2));
 		when(carePlanMapper.toCarePlan(t1)).thenReturn(cp1);
 		when(carePlanMapper.toCarePlan(t2)).thenReturn(cp2);
 		

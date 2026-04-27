@@ -66,6 +66,18 @@ public interface TasksService extends OpenmrsService {
 	 */
 	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
 	List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) throws APIException;
+
+	/**
+	 * Returns the non-voided tasks for a patient whose status is not in a definitively terminal
+	 * state — currently CANCELLED or ENTEREDINERROR. Completed and stopped tasks are still returned
+	 * because they represent legitimate history that clients may want to display.
+	 *
+	 * @param patientId the patient id
+	 * @return active tasks for the patient
+	 * @throws APIException
+	 */
+	@Authorized(TasksConfig.TASKS_VIEW_PRIVILEGE)
+	List<Task> getActiveTasksByPatientId(Integer patientId) throws APIException;
 	
 	/**
 	 * Voids a task with the provided reason.
