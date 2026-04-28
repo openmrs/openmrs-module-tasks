@@ -14,6 +14,7 @@ import java.util.Properties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
 import org.openmrs.Role;
@@ -60,13 +61,13 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	@Autowired
 	PersonService personService;
 
-	private User previousUser;
-
 	private User lowPrivilegeUser;
+
+	private Patient seedPatient;
 
 	@Before
 	public void loginAsLowPrivilegeUser() {
-		previousUser = Context.getAuthenticatedUser();
+		seedPatient = patientService.getPatient(2);
 		lowPrivilegeUser = createUserWithoutTasksPrivileges();
 		Context.logout();
 		Context.authenticate(LOW_PRIVILEGE_USERNAME, LOW_PRIVILEGE_PASSWORD);
@@ -75,9 +76,7 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	@After
 	public void restoreAuthentication() {
 		Context.logout();
-		if (previousUser != null) {
-			Context.authenticate("admin", "test");
-		}
+		Context.authenticate("admin", "test");
 	}
 
 	@Test(expected = APIAuthenticationException.class)
@@ -103,7 +102,7 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	@Test(expected = APIAuthenticationException.class)
 	public void saveTask_withoutManagePrivilege_shouldThrow() {
 		Task task = new Task();
-		task.setPatient(patientService.getPatient(2));
+		task.setPatient(seedPatient);
 		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setKind(TaskKind.APPOINTMENT);
 		tasksService.saveTask(task);
