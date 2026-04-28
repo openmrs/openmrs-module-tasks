@@ -152,9 +152,9 @@ public class CarePlanMapper {
 		if (task.getDescription() != null) {
 			detail.setDescription(task.getDescription());
 		}
-		
+
 		if (StringUtils.isNotBlank(task.getRationale())) {
-			carePlan.setDescription(task.getRationale());
+			detail.addReasonCode(new org.hl7.fhir.r4.model.CodeableConcept().setText(task.getRationale()));
 		}
 		
 		if (task.getAssignee() != null) {
@@ -392,7 +392,16 @@ public class CarePlanMapper {
 				if (detail.hasDescription()) {
 					task.setDescription(detail.getDescription());
 				}
-				
+
+				if (detail.hasReasonCode()) {
+					for (org.hl7.fhir.r4.model.CodeableConcept reason : detail.getReasonCode()) {
+						if (reason.hasText()) {
+							task.setRationale(reason.getText());
+							break;
+						}
+					}
+				}
+
 				// Handle due date: read from activity-dueKind extension first
 				String dueKindValue = null;
 				Visit visitFromExtension = null;
@@ -449,8 +458,15 @@ public class CarePlanMapper {
 					task.setDueDateType(DueDateType.DATE);
 				}
 				
-				// Read due date from scheduledPeriod or other scheduled types
-				if (detail.hasScheduledPeriod() && detail.getScheduledPeriod().hasEnd()) {
+				// Read due date from scheduledPeriod or other scheduled types. For visit-anchored tasks
+				// the scheduledPeriod.end is just a derived display value (the visit's stopDatetime as
+				// of write time); the source of truth on read-back is the reference visit, so leave
+				// task.dueDate null and let findNextVisitAfterReference / the reference visit drive it.
+				boolean visitAnchored = task.getDueDateType() == DueDateType.THIS_VISIT
+				        || task.getDueDateType() == DueDateType.NEXT_VISIT;
+				if (visitAnchored) {
+					// no-op: dueDate stays null, dueDateType already set above
+				} else if (detail.hasScheduledPeriod() && detail.getScheduledPeriod().hasEnd()) {
 					task.setDueDate(detail.getScheduledPeriod().getEnd());
 					// If no dueKind extension was found, assume DATE type
 					if (task.getDueDateType() == null) {
@@ -516,10 +532,6 @@ public class CarePlanMapper {
 				task.setAssigneeProviderRoleId(providerRoleId);
 			}
 		}
-		if (carePlan.hasDescription()) {
-			task.setRationale(StringUtils.defaultIfBlank(carePlan.getDescription(), null));
-		}
-		
 		return task;
 	}
 	

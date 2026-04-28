@@ -1450,15 +1450,17 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void toCarePlan_shouldMapTaskRationaleToCarePlanDescription() {
+	public void toCarePlan_shouldMapTaskRationaleToActivityReasonCode() {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setRationale("the clinical rationale");
 		task.setStatus(TaskStatus.NOTSTARTED);
-		
+
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-		
-		assertThat(carePlan.getDescription(), is("the clinical rationale"));
+
+		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
+		assertThat(detail.hasReasonCode(), is(true));
+		assertThat(detail.getReasonCodeFirstRep().getText(), is("the clinical rationale"));
 	}
 	
 	@Test
