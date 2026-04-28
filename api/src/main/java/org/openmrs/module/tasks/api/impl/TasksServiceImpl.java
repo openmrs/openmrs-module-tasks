@@ -21,7 +21,7 @@ import java.util.List;
 
 public class TasksServiceImpl extends BaseOpenmrsService implements TasksService {
 	
-	TasksDao dao;
+	private TasksDao dao;
 	
 	/**
 	 * Injected in moduleApplicationContext.xml

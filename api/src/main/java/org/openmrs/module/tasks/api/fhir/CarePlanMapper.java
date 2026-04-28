@@ -10,10 +10,13 @@
 package org.openmrs.module.tasks.api.fhir;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.CarePlan.CarePlanActivityComponent;
 import org.hl7.fhir.r4.model.CarePlan.CarePlanActivityDetailComponent;
 import org.hl7.fhir.r4.model.CarePlan.CarePlanActivityKind;
+import org.hl7.fhir.r4.model.CodeType;
+import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.Extension;
@@ -48,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
@@ -152,9 +156,9 @@ public class CarePlanMapper {
 		if (task.getDescription() != null) {
 			detail.setDescription(task.getDescription());
 		}
-
+		
 		if (StringUtils.isNotBlank(task.getRationale())) {
-			detail.addReasonCode(new org.hl7.fhir.r4.model.CodeableConcept().setText(task.getRationale()));
+			detail.addReasonCode(new CodeableConcept().setText(task.getRationale()));
 		}
 		
 		if (task.getAssignee() != null) {
@@ -242,7 +246,7 @@ public class CarePlanMapper {
 		if (dueKindValue != null) {
 			Extension dueKindExtension = new Extension();
 			dueKindExtension.setUrl(ACTIVITY_DUE_KIND_EXTENSION_URL);
-			dueKindExtension.setValue(new org.hl7.fhir.r4.model.CodeType(dueKindValue));
+			dueKindExtension.setValue(new CodeType(dueKindValue));
 			detail.addExtension(dueKindExtension);
 		}
 		
@@ -250,7 +254,7 @@ public class CarePlanMapper {
 		if (task.getPriority() != null) {
 			Extension priorityExtension = new Extension();
 			priorityExtension.setUrl(ACTIVITY_PRIORITY_EXTENSION_URL);
-			priorityExtension.setValue(new org.hl7.fhir.r4.model.CodeType(task.getPriority().name().toLowerCase()));
+			priorityExtension.setValue(new CodeType(task.getPriority().name().toLowerCase()));
 			detail.addExtension(priorityExtension);
 		}
 		
@@ -360,7 +364,7 @@ public class CarePlanMapper {
 		
 		// Parse instantiatesCanonical to set systemTask reference
 		if (carePlan.hasInstantiatesCanonical()) {
-			for (org.hl7.fhir.r4.model.CanonicalType canonical : carePlan.getInstantiatesCanonical()) {
+			for (CanonicalType canonical : carePlan.getInstantiatesCanonical()) {
 				String value = canonical.getValue();
 				if (StringUtils.isNotBlank(value) && value.startsWith(PLAN_DEFINITION_RESOURCE_TYPE + "/")) {
 					String systemTaskUuid = value.substring((PLAN_DEFINITION_RESOURCE_TYPE + "/").length());
@@ -392,16 +396,16 @@ public class CarePlanMapper {
 				if (detail.hasDescription()) {
 					task.setDescription(detail.getDescription());
 				}
-
+				
 				if (detail.hasReasonCode()) {
-					for (org.hl7.fhir.r4.model.CodeableConcept reason : detail.getReasonCode()) {
+					for (CodeableConcept reason : detail.getReasonCode()) {
 						if (reason.hasText()) {
 							task.setRationale(reason.getText());
 							break;
 						}
 					}
 				}
-
+				
 				// Handle due date: read from activity-dueKind extension first
 				String dueKindValue = null;
 				Visit visitFromExtension = null;
@@ -411,8 +415,8 @@ public class CarePlanMapper {
 					for (Extension extension : detail.getExtension()) {
 						if (ACTIVITY_DUE_KIND_EXTENSION_URL.equals(extension.getUrl()) && extension.hasValue()) {
 							IBaseDatatype value = extension.getValue();
-							if (value instanceof org.hl7.fhir.r4.model.CodeType) {
-								dueKindValue = ((org.hl7.fhir.r4.model.CodeType) value).getValue();
+							if (value instanceof CodeType) {
+								dueKindValue = ((CodeType) value).getValue();
 							} else if (value instanceof StringType) {
 								dueKindValue = ((StringType) value).getValue();
 							}
@@ -424,8 +428,8 @@ public class CarePlanMapper {
 							}
 						} else if (ACTIVITY_PRIORITY_EXTENSION_URL.equals(extension.getUrl()) && extension.hasValue()) {
 							IBaseDatatype value = extension.getValue();
-							if (value instanceof org.hl7.fhir.r4.model.CodeType) {
-								priorityValue = ((org.hl7.fhir.r4.model.CodeType) value).getValue();
+							if (value instanceof CodeType) {
+								priorityValue = ((CodeType) value).getValue();
 							} else if (value instanceof StringType) {
 								priorityValue = ((StringType) value).getValue();
 							}
@@ -573,7 +577,7 @@ public class CarePlanMapper {
 			ProviderService providerService = Context.getProviderService();
 			Person person = creator.getPerson();
 			if (person != null) {
-				java.util.Collection<Provider> providers = providerService.getProvidersByPerson(person, false);
+				Collection<Provider> providers = providerService.getProvidersByPerson(person, false);
 				if (providers != null && !providers.isEmpty()) {
 					Provider provider = providers.iterator().next();
 					Reference practitionerRef = practitionerReferenceTranslator.toFhirResource(provider);
@@ -619,7 +623,7 @@ public class CarePlanMapper {
 	}
 	
 	private CarePlanActivityKind fromTypeString(String type) {
-		String normalized = type.replace("-", "").replace("_", "").toUpperCase(Locale.ROOT);
+		String normalized = type.replace("-", "").replace("_", "");
 		for (CarePlanActivityKind kind : CarePlanActivityKind.values()) {
 			if (kind == CarePlanActivityKind.NULL) {
 				continue;

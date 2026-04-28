@@ -36,10 +36,10 @@ The module integrates with the OpenMRS FHIR2 module to expose standard FHIR endp
 - **Response:** Returns a list of CarePlan resources matching the search criteria
 
 ### Via Direct REST Controller
-The module also exposes endpoints directly at `/fhir/CarePlan`:
+The module also exposes endpoints directly at `/ws/rest/v1/tasks/careplan`:
 
 **Create CarePlan**
-- **Endpoint:** `POST /fhir/CarePlan`
+- **Endpoint:** `POST /ws/rest/v1/tasks/careplan`
 - **Content-Type:** `application/json`
 - **Description:** Creates a new CarePlan resource
 - **Request Body:** FHIR CarePlan resource in JSON format
@@ -47,7 +47,7 @@ The module also exposes endpoints directly at `/fhir/CarePlan`:
 - **Error Response:** Returns FHIR OperationOutcome in JSON format on error
 
 **Get CarePlans by Patient**
-- **Endpoint:** `GET /fhir/CarePlan?subject=Patient/{patientId}`
+- **Endpoint:** `GET /ws/rest/v1/tasks/careplan?subject=Patient/{patientId}`
 - **Description:** Retrieves all CarePlans for a specific patient
 - **Query Parameters:**
   - `subject` (required): Patient reference in format `Patient/{patientId}`
@@ -58,7 +58,7 @@ The module also exposes endpoints directly at `/fhir/CarePlan`:
 
 Building from Source
 --------------------
-You will need to have Java 21+ and Maven 2.x+ installed.  Use the command 'mvn package' to 
+You will need to have Java 8+ and Maven 2.x+ installed.  Use the command 'mvn package' to 
 compile and package the module.  The .omod file will be in the omod/target folder.
 
 Alternatively you can add the snippet provided in the [Creating Modules](https://wiki.openmrs.org/x/cAEr) page to your 

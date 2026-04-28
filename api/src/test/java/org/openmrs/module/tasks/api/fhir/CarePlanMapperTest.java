@@ -1238,6 +1238,37 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
+	public void toCarePlan_thenApplyBack_withThisVisitTask_shouldNotPopulateDueDateFromPeriod() throws Exception {
+		// THIS_VISIT/NEXT_VISIT tasks must round-trip with dueDate still null. The reference visit is
+		// the source of truth; the scheduledPeriod we emit is a derived display value that must not
+		// be cached back onto the entity.
+		VisitService visitService = Context.getVisitService();
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DAY_OF_YEAR, -2);
+		Date visitStart = cal.getTime();
+		cal.add(Calendar.DAY_OF_YEAR, 1);
+		Date visitEnd = cal.getTime();
+		
+		Visit endedVisit = createTestVisit(testPatient, visitStart, visitEnd);
+		visitService.saveVisit(endedVisit);
+		Context.flushSession();
+		
+		Task original = new Task();
+		original.setPatient(testPatient);
+		original.setDescription("visit-anchored");
+		original.setStatus(TaskStatus.NOTSTARTED);
+		original.setDueDateType(DueDateType.THIS_VISIT);
+		original.setDueDateReferenceVisit(endedVisit);
+		// dueDate intentionally null
+		
+		CarePlan carePlan = carePlanMapper.toCarePlan(original);
+		Task roundTripped = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(roundTripped.getDueDateType(), is(DueDateType.THIS_VISIT));
+		assertThat(roundTripped.getDueDate(), is(nullValue()));
+	}
+	
+	@Test
 	public void toCarePlan_withAppointmentKind_shouldReferenceAppointment() {
 		assertKindMapsToResourceType(TaskKind.APPOINTMENT, "Appointment");
 	}
@@ -1455,9 +1486,9 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		task.setPatient(testPatient);
 		task.setRationale("the clinical rationale");
 		task.setStatus(TaskStatus.NOTSTARTED);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
 		assertThat(detail.hasReasonCode(), is(true));
 		assertThat(detail.getReasonCodeFirstRep().getText(), is("the clinical rationale"));
@@ -1474,12 +1505,23 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void applyCarePlanToTask_shouldMapCarePlanDescriptionToTaskRationale() {
+	public void applyCarePlanToTask_shouldMapActivityReasonCodeTextToTaskRationale() {
 		CarePlan carePlan = createCarePlanWithoutPerformers();
-		carePlan.setDescription("outer rationale text");
+		carePlan.getActivityFirstRep().getDetail()
+		        .addReasonCode(new org.hl7.fhir.r4.model.CodeableConcept().setText("rationale from reasonCode"));
 		
 		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
 		
-		assertThat(result.getRationale(), is("outer rationale text"));
+		assertThat(result.getRationale(), is("rationale from reasonCode"));
+	}
+	
+	@Test
+	public void applyCarePlanToTask_shouldNotInterpretCarePlanDescriptionAsRationale() {
+		CarePlan carePlan = createCarePlanWithoutPerformers();
+		carePlan.setDescription("plan-level summary that should NOT become rationale");
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result.getRationale(), is(nullValue()));
 	}
 }
