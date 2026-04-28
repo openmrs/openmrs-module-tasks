@@ -83,7 +83,7 @@ public class CarePlanMapperAssigneeTest extends BaseModuleContextSensitiveTest {
 		
 		// Get test provider from test dataset
 		testProvider = providerService.getProvider(1);
-
+		
 		executeDataSet("datasets/ProviderRoleTestDataset.xml");
 		testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
 		assertThat("ProviderRole test fixture must load via DBUnit", testProviderRole, is(notNullValue()));

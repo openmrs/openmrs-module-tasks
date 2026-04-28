@@ -10,8 +10,8 @@
 package org.openmrs.module.tasks;
 
 /**
- * This internal enum mirrors {@code org.hl7.fhir.r4.model.CarePlan.CarePlanActivityStatus} and
- * is meant to protect against future regressions, largely if HL7 changes the underlying value set.
+ * This internal enum mirrors {@code org.hl7.fhir.r4.model.CarePlan.CarePlanActivityStatus} and is
+ * meant to protect against future regressions, largely if HL7 changes the underlying value set.
  */
 public enum TaskStatus {
 	NOTSTARTED,

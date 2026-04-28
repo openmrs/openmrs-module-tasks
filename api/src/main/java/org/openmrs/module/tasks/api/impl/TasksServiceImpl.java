@@ -53,7 +53,7 @@ public class TasksServiceImpl extends BaseOpenmrsService implements TasksService
 	public List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) throws APIException {
 		return dao.getTasksByPatientId(patientId, includeVoided);
 	}
-
+	
 	@Override
 	@Transactional(readOnly = true)
 	public List<Task> getActiveTasksByPatientId(Integer patientId) throws APIException {

@@ -108,9 +108,9 @@ public class CarePlanMapper {
 		if (task == null) {
 			throw new IllegalArgumentException("Task must not be null");
 		}
-
+		
 		CarePlan carePlan = new CarePlan();
-
+		
 		carePlan.setId(task.getUuid());
 		
 		carePlan.setStatus(mapTaskStatusToCarePlanStatus(task));
@@ -140,9 +140,9 @@ public class CarePlanMapper {
 		if (reference != null) {
 			activity.setReference(reference);
 		}
-
+		
 		CarePlanActivityDetailComponent detail = new CarePlanActivityDetailComponent();
-
+		
 		if (Boolean.TRUE.equals(task.getVoided())) {
 			detail.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
 		} else if (task.getStatus() != null) {
@@ -267,12 +267,12 @@ public class CarePlanMapper {
 		if (Boolean.TRUE.equals(task.getVoided())) {
 			return CarePlan.CarePlanStatus.ENTEREDINERROR;
 		}
-
+		
 		TaskStatus taskStatus = task.getStatus();
 		if (taskStatus == null) {
 			return CarePlan.CarePlanStatus.ACTIVE;
 		}
-
+		
 		switch (taskStatus) {
 			case COMPLETED:
 				return CarePlan.CarePlanStatus.COMPLETED;
@@ -289,22 +289,22 @@ public class CarePlanMapper {
 				return CarePlan.CarePlanStatus.ACTIVE;
 		}
 	}
-
+	
 	private static CarePlan.CarePlanActivityStatus toFhirStatus(TaskStatus status) {
 		return status == null ? null : CarePlan.CarePlanActivityStatus.valueOf(status.name());
 	}
-
+	
 	private static TaskStatus fromFhirStatus(CarePlan.CarePlanActivityStatus status) {
 		if (status == null || status == CarePlan.CarePlanActivityStatus.NULL) {
 			return null;
 		}
 		return TaskStatus.valueOf(status.name());
 	}
-
+	
 	private static CarePlan.CarePlanActivityKind toFhirKind(TaskKind kind) {
 		return kind == null ? null : CarePlan.CarePlanActivityKind.valueOf(kind.name());
 	}
-
+	
 	private static TaskKind fromFhirKind(CarePlan.CarePlanActivityKind kind) {
 		if (kind == null || kind == CarePlan.CarePlanActivityKind.NULL) {
 			return null;
@@ -378,10 +378,10 @@ public class CarePlanMapper {
 			
 			Optional.ofNullable(resolveKindFromActivity(activity)).map(CarePlanMapper::fromFhirKind)
 			        .ifPresent(task::setKind);
-
+			
 			if (activity.hasDetail()) {
 				CarePlanActivityDetailComponent detail = activity.getDetail();
-
+				
 				if (detail.hasStatus()) {
 					// Voiding is a separate concern driven through voidTask / FHIR DELETE. An incoming
 					// status — including CANCELLED — is a legitimate clinical state change and must not

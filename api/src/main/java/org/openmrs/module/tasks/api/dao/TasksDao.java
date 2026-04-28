@@ -60,11 +60,10 @@ public class TasksDao {
 		hql += " order by t.dateCreated desc";
 		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId).getResultList();
 	}
-
+	
 	public List<Task> getActiveTasksByPatientId(Integer patientId) {
 		String hql = "from tasks.Task t where t.patient.patientId = :patientId and t.voided = false"
-		        + " and (t.status is null or t.status not in (:excluded))"
-		        + " order by t.dateCreated desc";
+		        + " and (t.status is null or t.status not in (:excluded))" + " order by t.dateCreated desc";
 		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId)
 		        .setParameterList("excluded",
 		            Arrays.asList(CarePlan.CarePlanActivityStatus.CANCELLED, CarePlan.CarePlanActivityStatus.ENTEREDINERROR))

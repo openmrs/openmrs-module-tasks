@@ -72,7 +72,7 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	public MethodOutcome create(@ResourceParam CarePlan carePlan) {
 		Patient patient = resolvePatientOrThrow(carePlan);
 		CarePlanContext context = resolveCarePlanContext(carePlan);
-
+		
 		Task task = carePlanMapper.toTask(carePlan, patient, context.getAssignee(), context.getAssigneeRoleUuid());
 		
 		if (task.getCreator() == null) {
@@ -104,17 +104,18 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		if (id == null || StringUtils.isBlank(id.getIdPart())) {
 			throw new InvalidRequestException("CarePlan ID is required");
 		}
-
+		
 		Task existingTask = tasksService.getTaskByUuid(id.getIdPart());
 		if (existingTask == null) {
 			throw new ResourceNotFoundException(id);
 		}
-
-		Patient patient = carePlanHasSubjectReference(carePlan) ? resolvePatientOrThrow(carePlan) : existingTask.getPatient();
+		
+		Patient patient = carePlanHasSubjectReference(carePlan) ? resolvePatientOrThrow(carePlan)
+		        : existingTask.getPatient();
 		if (patient == null) {
 			throw new InvalidRequestException("Patient reference is required");
 		}
-
+		
 		CarePlanContext context = resolveCarePlanContext(carePlan);
 		
 		// Ensure CarePlan ID matches the resource being updated
@@ -207,7 +208,7 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	private boolean carePlanHasSubjectReference(CarePlan carePlan) {
 		return carePlan != null && carePlan.hasSubject() && carePlan.getSubject().hasReference();
 	}
-
+	
 	private Patient resolvePatientOrThrow(CarePlan carePlan) {
 		if (!carePlanHasSubjectReference(carePlan)) {
 			throw new InvalidRequestException("Subject reference is required");
@@ -226,11 +227,11 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		}
 		return patient;
 	}
-
+	
 	private CarePlanContext resolveCarePlanContext(CarePlan carePlan) {
 		Provider assignee = null;
 		String assigneeRoleUuid = null;
-
+		
 		if (carePlan != null && carePlan.hasActivity() && !carePlan.getActivity().isEmpty()) {
 			CarePlan.CarePlanActivityComponent activity = carePlan.getActivityFirstRep();
 			if (activity.hasDetail() && activity.getDetail().hasPerformer()) {
@@ -259,22 +260,22 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		
 		return new CarePlanContext(assignee, assigneeRoleUuid);
 	}
-
+	
 	private static class CarePlanContext {
-
+		
 		private final Provider assignee;
-
+		
 		private final String assigneeRoleUuid;
-
+		
 		private CarePlanContext(Provider assignee, String assigneeRoleUuid) {
 			this.assignee = assignee;
 			this.assigneeRoleUuid = assigneeRoleUuid;
 		}
-
+		
 		public Provider getAssignee() {
 			return assignee;
 		}
-
+		
 		public String getAssigneeRoleUuid() {
 			return assigneeRoleUuid;
 		}

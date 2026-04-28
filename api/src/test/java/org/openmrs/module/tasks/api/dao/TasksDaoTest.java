@@ -65,26 +65,26 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		task.setKind(TaskKind.APPOINTMENT);
 		task.setPatient(patientService.getPatient(2));
 		dao.saveTask(task);
-
+		
 		Context.flushSession();
 		Integer originalId = task.getId();
 		String originalUuid = task.getUuid();
 		assertThat(originalId, is(notNullValue()));
-
+		
 		Task reloaded = dao.getTaskByUuid(originalUuid);
 		reloaded.setDescription("updated");
 		reloaded.setStatus(TaskStatus.INPROGRESS);
 		dao.saveTask(reloaded);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		Task afterUpdate = dao.getTaskByUuid(originalUuid);
 		assertThat(afterUpdate.getId(), is(originalId));
 		assertThat(afterUpdate.getDescription(), is("updated"));
 		assertThat(afterUpdate.getStatus(), is(TaskStatus.INPROGRESS));
 	}
-
+	
 	@Test
 	public void deleteTask_shouldRemoveRowFromDb() {
 		Task task = new Task();
@@ -96,14 +96,14 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		Context.flushSession();
 		String uuid = task.getUuid();
 		assertThat(dao.getTaskByUuid(uuid), is(notNullValue()));
-
+		
 		dao.deleteTask(task);
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		assertThat(dao.getTaskByUuid(uuid), is(nullValue()));
 	}
-
+	
 	@Test
 	public void saveTask_shouldSaveAllPropertiesInDb() {
 		//Given
@@ -280,82 +280,82 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	@Test
 	public void getActiveTasksByPatientId_shouldExcludeCancelledAndEnteredInErrorTasks() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task active = new Task();
 		active.setDescription("active");
 		active.setStatus(TaskStatus.INPROGRESS);
 		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		dao.saveTask(active);
-
+		
 		Task completed = new Task();
 		completed.setDescription("completed");
 		completed.setStatus(TaskStatus.COMPLETED);
 		completed.setKind(TaskKind.APPOINTMENT);
 		completed.setPatient(patient);
 		dao.saveTask(completed);
-
+		
 		Task stopped = new Task();
 		stopped.setDescription("stopped");
 		stopped.setStatus(TaskStatus.STOPPED);
 		stopped.setKind(TaskKind.APPOINTMENT);
 		stopped.setPatient(patient);
 		dao.saveTask(stopped);
-
+		
 		Task cancelled = new Task();
 		cancelled.setDescription("cancelled");
 		cancelled.setStatus(TaskStatus.CANCELLED);
 		cancelled.setKind(TaskKind.APPOINTMENT);
 		cancelled.setPatient(patient);
 		dao.saveTask(cancelled);
-
+		
 		Task enteredInError = new Task();
 		enteredInError.setDescription("entered-in-error");
 		enteredInError.setStatus(TaskStatus.ENTEREDINERROR);
 		enteredInError.setKind(TaskKind.APPOINTMENT);
 		enteredInError.setPatient(patient);
 		dao.saveTask(enteredInError);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
-
-		assertThat(tasks, hasItems(hasProperty("description", is("active")),
-		    hasProperty("description", is("completed")), hasProperty("description", is("stopped"))));
+		
+		assertThat(tasks, hasItems(hasProperty("description", is("active")), hasProperty("description", is("completed")),
+		    hasProperty("description", is("stopped"))));
 		assertThat(tasks, not(hasItem(hasProperty("description", is("cancelled")))));
 		assertThat(tasks, not(hasItem(hasProperty("description", is("entered-in-error")))));
 	}
-
+	
 	@Test
 	public void getActiveTasksByPatientId_shouldIncludeTasksWithNullStatus() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task nullStatus = new Task();
 		nullStatus.setDescription("no status");
 		nullStatus.setKind(TaskKind.APPOINTMENT);
 		nullStatus.setPatient(patient);
 		dao.saveTask(nullStatus);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks, hasItem(hasProperty("description", is("no status"))));
 	}
-
+	
 	@Test
 	public void getActiveTasksByPatientId_shouldExcludeVoidedTasks() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task active = new Task();
 		active.setDescription("active");
 		active.setStatus(TaskStatus.INPROGRESS);
 		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		dao.saveTask(active);
-
+		
 		Task voided = new Task();
 		voided.setDescription("voided");
 		voided.setStatus(TaskStatus.INPROGRESS);
@@ -364,29 +364,29 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
 		dao.saveTask(voided);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks, hasItem(hasProperty("description", is("active"))));
 		assertThat(tasks, not(hasItem(hasProperty("description", is("voided")))));
 	}
-
+	
 	@Test
 	public void getActiveTasksByPatientId_forPatientWithNoTasks_shouldReturnEmptyList() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks, is(empty()));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_shouldReturnTasksOrderedByDateCreatedDescending() {
 		Patient patient = patientService.getPatient(2);
-
+		
 		Task older = new Task();
 		older.setDescription("older task");
 		older.setStatus(TaskStatus.NOTSTARTED);
@@ -394,7 +394,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		older.setPatient(patient);
 		older.setDateCreated(new java.util.Date(1000000L));
 		dao.saveTask(older);
-
+		
 		Task middle = new Task();
 		middle.setDescription("middle task");
 		middle.setStatus(TaskStatus.NOTSTARTED);
@@ -402,7 +402,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		middle.setPatient(patient);
 		middle.setDateCreated(new java.util.Date(2000000L));
 		dao.saveTask(middle);
-
+		
 		Task newer = new Task();
 		newer.setDescription("newer task");
 		newer.setStatus(TaskStatus.NOTSTARTED);
@@ -410,12 +410,12 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		newer.setPatient(patient);
 		newer.setDateCreated(new java.util.Date(3000000L));
 		dao.saveTask(newer);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		List<Task> tasks = dao.getTasksByPatientId(patient.getId());
-
+		
 		assertThat(tasks.size(), is(3));
 		assertThat(tasks.get(0).getDescription(), is("newer task"));
 		assertThat(tasks.get(1).getDescription(), is("middle task"));

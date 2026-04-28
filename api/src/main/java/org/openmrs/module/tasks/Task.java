@@ -77,7 +77,7 @@ public class Task extends BaseOpenmrsData {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", length = 50)
 	private TaskStatus status;
-
+	
 	@Enumerated(EnumType.STRING)
 	@Column(name = "kind", length = 50)
 	private TaskKind kind;
@@ -149,15 +149,15 @@ public class Task extends BaseOpenmrsData {
 	public TaskStatus getStatus() {
 		return status;
 	}
-
+	
 	public void setStatus(TaskStatus status) {
 		this.status = status;
 	}
-
+	
 	public TaskKind getKind() {
 		return kind;
 	}
-
+	
 	public void setKind(TaskKind kind) {
 		this.kind = kind;
 	}

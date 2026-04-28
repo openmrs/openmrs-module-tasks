@@ -117,20 +117,20 @@ public class CarePlanFhirResourceProviderTest {
 	public void create_withUnknownPatient_shouldThrowResourceNotFound() {
 		CarePlan carePlan = carePlanWithSubject(PATIENT_UUID);
 		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(null);
-
+		
 		provider.create(carePlan);
 	}
-
+	
 	@Test(expected = ResourceNotFoundException.class)
 	public void update_withUnknownPatientInPayload_shouldThrowResourceNotFound() {
 		Task existing = new Task();
 		existing.setUuid(CARE_PLAN_UUID);
 		existing.setPatient(testPatient);
 		CarePlan incoming = carePlanWithSubject("unknown-patient-uuid");
-
+		
 		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(existing);
 		when(patientService.getPatientByUuid("unknown-patient-uuid")).thenReturn(null);
-
+		
 		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
 	}
 	
@@ -391,9 +391,9 @@ public class CarePlanFhirResourceProviderTest {
 		task.setUuid(CARE_PLAN_UUID);
 		task.setStatus(TaskStatus.INPROGRESS);
 		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(task);
-
+		
 		provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
-
+		
 		assertThat(task.getStatus(), is(TaskStatus.INPROGRESS));
 	}
 	

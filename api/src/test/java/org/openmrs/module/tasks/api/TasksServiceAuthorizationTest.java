@@ -37,34 +37,34 @@ import org.springframework.beans.factory.annotation.Autowired;
  * missing the relevant privilege and asserts APIAuthenticationException.
  */
 public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTest {
-
+	
 	private static final String LOW_PRIVILEGE_USERNAME = "tasks-authz-test-user";
-
+	
 	private static final String LOW_PRIVILEGE_PASSWORD = "Tasks-authz-test-1";
-
+	
 	@Override
 	public Properties getRuntimeProperties() {
 		Properties props = super.getRuntimeProperties();
 		props.setProperty("module.allow_web_admin", "false");
 		return props;
 	}
-
+	
 	@Autowired
 	TasksService tasksService;
-
+	
 	@Autowired
 	PatientService patientService;
-
+	
 	@Autowired
 	UserService userService;
-
+	
 	@Autowired
 	PersonService personService;
-
+	
 	private User lowPrivilegeUser;
-
+	
 	private Patient seedPatient;
-
+	
 	@Before
 	public void loginAsLowPrivilegeUser() {
 		seedPatient = patientService.getPatient(2);
@@ -72,33 +72,33 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 		Context.logout();
 		Context.authenticate(LOW_PRIVILEGE_USERNAME, LOW_PRIVILEGE_PASSWORD);
 	}
-
+	
 	@After
 	public void restoreAuthentication() {
 		Context.logout();
 		Context.authenticate("admin", "test");
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getTaskByUuid_withoutViewPrivilege_shouldThrow() {
 		tasksService.getTaskByUuid("any-uuid");
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getTasksByPatientId_withoutViewPrivilege_shouldThrow() {
 		tasksService.getTasksByPatientId(2);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getTasksByPatientIdIncludeVoided_withoutViewPrivilege_shouldThrow() {
 		tasksService.getTasksByPatientId(2, true);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getActiveTasksByPatientId_withoutViewPrivilege_shouldThrow() {
 		tasksService.getActiveTasksByPatientId(2);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void saveTask_withoutManagePrivilege_shouldThrow() {
 		Task task = new Task();
@@ -107,39 +107,39 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 		task.setKind(TaskKind.APPOINTMENT);
 		tasksService.saveTask(task);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void voidTask_withoutDeletePrivilege_shouldThrow() {
 		Task task = new Task();
 		tasksService.voidTask(task, "reason");
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void purgeTask_withoutDeletePrivilege_shouldThrow() {
 		Task task = new Task();
 		tasksService.purgeTask(task);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getSystemTaskByUuid_withoutViewPrivilege_shouldThrow() {
 		tasksService.getSystemTaskByUuid("any-uuid");
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void getAllSystemTasks_withoutViewPrivilege_shouldThrow() {
 		tasksService.getAllSystemTasks(false);
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void saveSystemTask_withoutManagePrivilege_shouldThrow() {
 		tasksService.saveSystemTask(new SystemTask());
 	}
-
+	
 	@Test(expected = APIAuthenticationException.class)
 	public void retireSystemTask_withoutManagePrivilege_shouldThrow() {
 		tasksService.retireSystemTask(new SystemTask(), "reason");
 	}
-
+	
 	@Test
 	public void getTaskByUuid_withViewPrivilege_shouldNotThrow() {
 		Context.logout();
@@ -149,23 +149,23 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 		// simply that the call succeeded without APIAuthenticationException.
 		assert task == null;
 	}
-
+	
 	private User createUserWithoutTasksPrivileges() {
 		User existing = userService.getUserByUsername(LOW_PRIVILEGE_USERNAME);
 		if (existing != null) {
 			return existing;
 		}
-
+		
 		Person person = new Person();
 		PersonName name = new PersonName("Tasks", null, "Authz");
 		person.addName(name);
 		person.setGender("F");
 		personService.savePerson(person);
-
+		
 		User user = new User();
 		user.setUsername(LOW_PRIVILEGE_USERNAME);
 		user.setPerson(person);
-
+		
 		Role emptyRole = userService.getRole("Tasks Authz Test Role");
 		if (emptyRole == null) {
 			emptyRole = new Role();
@@ -174,7 +174,7 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 			emptyRole = userService.saveRole(emptyRole);
 		}
 		user.addRole(emptyRole);
-
+		
 		return userService.createUser(user, LOW_PRIVILEGE_PASSWORD);
 	}
 }

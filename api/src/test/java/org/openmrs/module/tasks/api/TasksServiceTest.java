@@ -110,16 +110,16 @@ public class TasksServiceTest {
 		Task task1 = new Task();
 		task1.setDescription("Active");
 		tasks.add(task1);
-
+		
 		when(dao.getActiveTasksByPatientId(patientId)).thenReturn(tasks);
-
+		
 		List<Task> foundTasks = tasksService.getActiveTasksByPatientId(patientId);
-
+		
 		verify(dao).getActiveTasksByPatientId(patientId);
 		assertThat(foundTasks.size(), is(1));
 		assertThat(foundTasks.get(0).getDescription(), is("Active"));
 	}
-
+	
 	@Test
 	public void getTasksByPatientId_withIncludeVoided_shouldDelegateToDao() {
 		Integer patientId = 2;
