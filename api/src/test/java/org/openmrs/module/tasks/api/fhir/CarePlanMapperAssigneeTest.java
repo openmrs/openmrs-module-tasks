@@ -83,54 +83,10 @@ public class CarePlanMapperAssigneeTest extends BaseModuleContextSensitiveTest {
 		
 		// Get test provider from test dataset
 		testProvider = providerService.getProvider(1);
-		
-		// Create a test ProviderRole and insert it into the database
-		// First check if it already exists
+
+		executeDataSet("datasets/ProviderRoleTestDataset.xml");
 		testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-		if (testProviderRole == null) {
-			// Insert directly via SQL for testing - use a simpler approach
-			try {
-				// First, get the next available ID
-				java.util.List<java.util.List<Object>> result = Context.getAdministrationService()
-				        .executeSQL("SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
-				Integer nextId = 1;
-				if (result != null && !result.isEmpty() && result.get(0) != null && !result.get(0).isEmpty()) {
-					nextId = ((Number) result.get(0).get(0)).intValue();
-				}
-				
-				// Insert the ProviderRole
-				Context.getAdministrationService().executeSQL(String.format(
-				    "INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')",
-				    nextId), false);
-				Context.flushSession();
-				Context.clearSession();
-				
-				// Retrieve the saved ProviderRole
-				testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-			}
-			catch (Exception e) {
-				// If insertion fails, try to get ProviderRole by ID 1
-				try {
-					testProviderRole = providerService.getProviderRole(1);
-				}
-				catch (Exception ex) {
-					// If that also fails, the test will need to handle null ProviderRole
-					// But we'll create a minimal object for the test to use
-					testProviderRole = new ProviderRole();
-					testProviderRole.setName("Test Provider Role");
-					testProviderRole.setUuid("test-provider-role-uuid");
-					// Note: This ProviderRole won't exist in DB, so resolution will fail
-					// The test may need to be adjusted to handle this case
-				}
-			}
-		}
-		
-		// Ensure testProviderRole is never null
-		if (testProviderRole == null) {
-			testProviderRole = new ProviderRole();
-			testProviderRole.setName("Test Provider Role");
-			testProviderRole.setUuid("test-provider-role-uuid");
-		}
+		assertThat("ProviderRole test fixture must load via DBUnit", testProviderRole, is(notNullValue()));
 		
 		// Mock patient reference translator
 		Reference patientRef = new Reference();
