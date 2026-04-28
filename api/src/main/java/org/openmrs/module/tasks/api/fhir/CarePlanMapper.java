@@ -37,6 +37,8 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.tasks.DueDateType;
 import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.tasks.SystemTask;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.module.fhir2.api.translators.PatientReferenceTranslator;
 import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Task;
@@ -134,17 +136,17 @@ public class CarePlanMapper {
 		}
 		
 		CarePlanActivityComponent activity = new CarePlanActivityComponent();
-		Reference reference = buildActivityReference(task.getKind());
+		Reference reference = buildActivityReference(toFhirKind(task.getKind()));
 		if (reference != null) {
 			activity.setReference(reference);
 		}
-		
+
 		CarePlanActivityDetailComponent detail = new CarePlanActivityDetailComponent();
-		
+
 		if (Boolean.TRUE.equals(task.getVoided())) {
 			detail.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
 		} else if (task.getStatus() != null) {
-			detail.setStatus(task.getStatus());
+			detail.setStatus(toFhirStatus(task.getStatus()));
 		}
 		
 		if (task.getDescription() != null) {
@@ -265,13 +267,13 @@ public class CarePlanMapper {
 		if (Boolean.TRUE.equals(task.getVoided())) {
 			return CarePlan.CarePlanStatus.ENTEREDINERROR;
 		}
-		
-		CarePlan.CarePlanActivityStatus activityStatus = task.getStatus();
-		if (activityStatus == null) {
+
+		TaskStatus taskStatus = task.getStatus();
+		if (taskStatus == null) {
 			return CarePlan.CarePlanStatus.ACTIVE;
 		}
-		
-		switch (activityStatus) {
+
+		switch (taskStatus) {
 			case COMPLETED:
 				return CarePlan.CarePlanStatus.COMPLETED;
 			case CANCELLED:
@@ -286,6 +288,28 @@ public class CarePlanMapper {
 			default:
 				return CarePlan.CarePlanStatus.ACTIVE;
 		}
+	}
+
+	private static CarePlan.CarePlanActivityStatus toFhirStatus(TaskStatus status) {
+		return status == null ? null : CarePlan.CarePlanActivityStatus.valueOf(status.name());
+	}
+
+	private static TaskStatus fromFhirStatus(CarePlan.CarePlanActivityStatus status) {
+		if (status == null || status == CarePlan.CarePlanActivityStatus.NULL) {
+			return null;
+		}
+		return TaskStatus.valueOf(status.name());
+	}
+
+	private static CarePlan.CarePlanActivityKind toFhirKind(TaskKind kind) {
+		return kind == null ? null : CarePlan.CarePlanActivityKind.valueOf(kind.name());
+	}
+
+	private static TaskKind fromFhirKind(CarePlan.CarePlanActivityKind kind) {
+		if (kind == null || kind == CarePlan.CarePlanActivityKind.NULL) {
+			return null;
+		}
+		return TaskKind.valueOf(kind.name());
 	}
 	
 	/**
@@ -352,16 +376,17 @@ public class CarePlanMapper {
 		if (carePlan.hasActivity() && !carePlan.getActivity().isEmpty()) {
 			CarePlanActivityComponent activity = carePlan.getActivityFirstRep();
 			
-			Optional.ofNullable(resolveKindFromActivity(activity)).ifPresent(task::setKind);
-			
+			Optional.ofNullable(resolveKindFromActivity(activity)).map(CarePlanMapper::fromFhirKind)
+			        .ifPresent(task::setKind);
+
 			if (activity.hasDetail()) {
 				CarePlanActivityDetailComponent detail = activity.getDetail();
-				
+
 				if (detail.hasStatus()) {
 					// Voiding is a separate concern driven through voidTask / FHIR DELETE. An incoming
 					// status — including CANCELLED — is a legitimate clinical state change and must not
 					// flip task.voided.
-					task.setStatus(detail.getStatus());
+					task.setStatus(fromFhirStatus(detail.getStatus()));
 				}
 				
 				if (detail.hasDescription()) {

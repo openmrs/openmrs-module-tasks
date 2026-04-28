@@ -9,7 +9,8 @@
  */
 package org.openmrs.module.tasks.api;
 
-import org.hl7.fhir.r4.model.CarePlan;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -52,8 +53,8 @@ public class TasksServiceTest {
 		//Given
 		Task task = new Task();
 		task.setDescription("some description");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		
 		when(dao.saveTask(task)).thenReturn(task);
 		

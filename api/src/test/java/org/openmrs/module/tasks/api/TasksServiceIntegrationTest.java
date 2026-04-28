@@ -15,7 +15,8 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.Properties;
 
-import org.hl7.fhir.r4.model.CarePlan;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.junit.Test;
 import org.openmrs.Patient;
 import org.openmrs.User;
@@ -54,8 +55,8 @@ public class TasksServiceIntegrationTest extends BaseModuleContextSensitiveTest 
 		Task task = new Task();
 		task.setPatient(patient);
 		task.setDescription("Integration test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		tasksService.saveTask(task);
 		
 		Context.flushSession();
@@ -112,8 +113,8 @@ public class TasksServiceIntegrationTest extends BaseModuleContextSensitiveTest 
 		Task task = new Task();
 		task.setPatient(patient);
 		task.setDescription("Integration test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		tasksService.saveTask(task);
 		
 		tasksService.voidTask(task, "original reason");

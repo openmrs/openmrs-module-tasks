@@ -11,7 +11,6 @@ package org.openmrs.module.tasks.api;
 
 import java.util.Properties;
 
-import org.hl7.fhir.r4.model.CarePlan;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +25,8 @@ import org.openmrs.api.UserService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -103,8 +104,8 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	public void saveTask_withoutManagePrivilege_shouldThrow() {
 		Task task = new Task();
 		task.setPatient(patientService.getPatient(2));
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		tasksService.saveTask(task);
 	}
 

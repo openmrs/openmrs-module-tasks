@@ -25,6 +25,7 @@ import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
+import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.module.tasks.api.TasksService;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,7 +104,7 @@ public class CarePlanMapperInstantiatesCanonicalTest extends BaseModuleContextSe
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Task from template");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setSystemTask(testSystemTask);
 		
 		// When: Converting Task to CarePlan
@@ -124,7 +125,7 @@ public class CarePlanMapperInstantiatesCanonicalTest extends BaseModuleContextSe
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Standalone task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setSystemTask(null);
 		
 		// When: Converting Task to CarePlan

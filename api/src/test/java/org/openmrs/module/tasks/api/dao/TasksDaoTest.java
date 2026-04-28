@@ -9,7 +9,8 @@
  */
 package org.openmrs.module.tasks.api.dao;
 
-import org.hl7.fhir.r4.model.CarePlan;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.junit.Test;
 import org.openmrs.Patient;
 import org.openmrs.api.PatientService;
@@ -60,8 +61,8 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	public void saveTask_onExistingEntity_shouldUpdateInPlace() {
 		Task task = new Task();
 		task.setDescription("initial");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		task.setPatient(patientService.getPatient(2));
 		dao.saveTask(task);
 
@@ -72,7 +73,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 
 		Task reloaded = dao.getTaskByUuid(originalUuid);
 		reloaded.setDescription("updated");
-		reloaded.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		reloaded.setStatus(TaskStatus.INPROGRESS);
 		dao.saveTask(reloaded);
 
 		Context.flushSession();
@@ -81,15 +82,15 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		Task afterUpdate = dao.getTaskByUuid(originalUuid);
 		assertThat(afterUpdate.getId(), is(originalId));
 		assertThat(afterUpdate.getDescription(), is("updated"));
-		assertThat(afterUpdate.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
+		assertThat(afterUpdate.getStatus(), is(TaskStatus.INPROGRESS));
 	}
 
 	@Test
 	public void deleteTask_shouldRemoveRowFromDb() {
 		Task task = new Task();
 		task.setDescription("to be deleted");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		task.setPatient(patientService.getPatient(2));
 		dao.saveTask(task);
 		Context.flushSession();
@@ -108,8 +109,8 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		//Given
 		Task task = new Task();
 		task.setDescription("some description");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task.setStatus(TaskStatus.NOTSTARTED);
+		task.setKind(TaskKind.APPOINTMENT);
 		Patient patient = patientService.getPatient(2);
 		task.setPatient(patient);
 		task.setAssignee(providerService.getProvider(1));
@@ -141,16 +142,16 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		
 		Task task1 = new Task();
 		task1.setDescription("Task 1");
-		task1.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		task1.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		task1.setStatus(TaskStatus.NOTSTARTED);
+		task1.setKind(TaskKind.APPOINTMENT);
 		task1.setPatient(patient);
 		task1.setAssigneeProviderRoleId(1);
 		dao.saveTask(task1);
 		
 		Task task2 = new Task();
 		task2.setDescription("Task 2");
-		task2.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
-		task2.setKind(CarePlan.CarePlanActivityKind.MEDICATIONREQUEST);
+		task2.setStatus(TaskStatus.INPROGRESS);
+		task2.setKind(TaskKind.MEDICATIONREQUEST);
 		task2.setPatient(patient);
 		dao.saveTask(task2);
 		
@@ -172,16 +173,16 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		
 		Task active = new Task();
 		active.setDescription("Active Task");
-		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setStatus(TaskStatus.NOTSTARTED);
+		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
 		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
-		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setStatus(TaskStatus.CANCELLED);
+		voided.setKind(TaskKind.APPOINTMENT);
 		voided.setPatient(patient);
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
@@ -203,16 +204,16 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		
 		Task active = new Task();
 		active.setDescription("Active Task");
-		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setStatus(TaskStatus.NOTSTARTED);
+		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
 		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
-		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setStatus(TaskStatus.CANCELLED);
+		voided.setKind(TaskKind.APPOINTMENT);
 		voided.setPatient(patient);
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
@@ -233,16 +234,16 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 		
 		Task active = new Task();
 		active.setDescription("Active Task");
-		active.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setStatus(TaskStatus.NOTSTARTED);
+		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		active.setVoided(false);
 		dao.saveTask(active);
 		
 		Task voided = new Task();
 		voided.setDescription("Voided Task");
-		voided.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setStatus(TaskStatus.CANCELLED);
+		voided.setKind(TaskKind.APPOINTMENT);
 		voided.setPatient(patient);
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
@@ -282,36 +283,36 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 
 		Task active = new Task();
 		active.setDescription("active");
-		active.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
-		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setStatus(TaskStatus.INPROGRESS);
+		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		dao.saveTask(active);
 
 		Task completed = new Task();
 		completed.setDescription("completed");
-		completed.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
-		completed.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		completed.setStatus(TaskStatus.COMPLETED);
+		completed.setKind(TaskKind.APPOINTMENT);
 		completed.setPatient(patient);
 		dao.saveTask(completed);
 
 		Task stopped = new Task();
 		stopped.setDescription("stopped");
-		stopped.setStatus(CarePlan.CarePlanActivityStatus.STOPPED);
-		stopped.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		stopped.setStatus(TaskStatus.STOPPED);
+		stopped.setKind(TaskKind.APPOINTMENT);
 		stopped.setPatient(patient);
 		dao.saveTask(stopped);
 
 		Task cancelled = new Task();
 		cancelled.setDescription("cancelled");
-		cancelled.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
-		cancelled.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		cancelled.setStatus(TaskStatus.CANCELLED);
+		cancelled.setKind(TaskKind.APPOINTMENT);
 		cancelled.setPatient(patient);
 		dao.saveTask(cancelled);
 
 		Task enteredInError = new Task();
 		enteredInError.setDescription("entered-in-error");
-		enteredInError.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
-		enteredInError.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		enteredInError.setStatus(TaskStatus.ENTEREDINERROR);
+		enteredInError.setKind(TaskKind.APPOINTMENT);
 		enteredInError.setPatient(patient);
 		dao.saveTask(enteredInError);
 
@@ -332,7 +333,7 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 
 		Task nullStatus = new Task();
 		nullStatus.setDescription("no status");
-		nullStatus.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		nullStatus.setKind(TaskKind.APPOINTMENT);
 		nullStatus.setPatient(patient);
 		dao.saveTask(nullStatus);
 
@@ -350,15 +351,15 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 
 		Task active = new Task();
 		active.setDescription("active");
-		active.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
-		active.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		active.setStatus(TaskStatus.INPROGRESS);
+		active.setKind(TaskKind.APPOINTMENT);
 		active.setPatient(patient);
 		dao.saveTask(active);
 
 		Task voided = new Task();
 		voided.setDescription("voided");
-		voided.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
-		voided.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		voided.setStatus(TaskStatus.INPROGRESS);
+		voided.setKind(TaskKind.APPOINTMENT);
 		voided.setPatient(patient);
 		voided.setVoided(true);
 		voided.setDateVoided(new java.util.Date());
@@ -388,24 +389,24 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 
 		Task older = new Task();
 		older.setDescription("older task");
-		older.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		older.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		older.setStatus(TaskStatus.NOTSTARTED);
+		older.setKind(TaskKind.APPOINTMENT);
 		older.setPatient(patient);
 		older.setDateCreated(new java.util.Date(1000000L));
 		dao.saveTask(older);
 
 		Task middle = new Task();
 		middle.setDescription("middle task");
-		middle.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		middle.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		middle.setStatus(TaskStatus.NOTSTARTED);
+		middle.setKind(TaskKind.APPOINTMENT);
 		middle.setPatient(patient);
 		middle.setDateCreated(new java.util.Date(2000000L));
 		dao.saveTask(middle);
 
 		Task newer = new Task();
 		newer.setDescription("newer task");
-		newer.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		newer.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		newer.setStatus(TaskStatus.NOTSTARTED);
+		newer.setKind(TaskKind.APPOINTMENT);
 		newer.setPatient(patient);
 		newer.setDateCreated(new java.util.Date(3000000L));
 		dao.saveTask(newer);

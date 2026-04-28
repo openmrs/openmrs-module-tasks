@@ -26,6 +26,7 @@ import org.openmrs.User;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.ProviderService;
 import org.openmrs.module.tasks.Task;
+import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.module.tasks.api.TasksService;
 
 import java.util.Arrays;
@@ -375,12 +376,12 @@ public class CarePlanFhirResourceProviderTest {
 		// Voiding is orthogonal to task.status — the stored status stays whatever it was.
 		Task task = new Task();
 		task.setUuid(CARE_PLAN_UUID);
-		task.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		task.setStatus(TaskStatus.INPROGRESS);
 		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(task);
-		
+
 		provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
-		
-		assertThat(task.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
+
+		assertThat(task.getStatus(), is(TaskStatus.INPROGRESS));
 	}
 	
 	// ---------- search ----------

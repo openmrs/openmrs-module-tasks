@@ -32,6 +32,8 @@ import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.fhir2.api.translators.PatientReferenceTranslator;
 import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Task;
+import org.openmrs.module.tasks.TaskKind;
+import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import java.util.Properties;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -95,54 +97,10 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		
 		// Get test provider from test dataset
 		testProvider = providerService.getProvider(1);
-		
-		// Create a test ProviderRole and insert it into the database
-		// First check if it already exists
+
+		executeDataSet("datasets/ProviderRoleTestDataset.xml");
 		testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-		if (testProviderRole == null) {
-			// Insert directly via SQL for testing - use a simpler approach
-			try {
-				// First, get the next available ID
-				java.util.List<java.util.List<Object>> result = Context.getAdministrationService()
-				        .executeSQL("SELECT COALESCE(MAX(provider_role_id), 0) + 1 AS next_id FROM provider_role", true);
-				Integer nextId = 1;
-				if (result != null && !result.isEmpty() && result.get(0) != null && !result.get(0).isEmpty()) {
-					nextId = ((Number) result.get(0).get(0)).intValue();
-				}
-				
-				// Insert the ProviderRole
-				Context.getAdministrationService().executeSQL(String.format(
-				    "INSERT INTO provider_role (provider_role_id, name, uuid) VALUES (%d, 'Test Provider Role', 'test-provider-role-uuid')",
-				    nextId), false);
-				Context.flushSession();
-				Context.clearSession();
-				
-				// Retrieve the saved ProviderRole
-				testProviderRole = providerService.getProviderRoleByUuid("test-provider-role-uuid");
-			}
-			catch (Exception e) {
-				// If insertion fails, try to get ProviderRole by ID 1
-				try {
-					testProviderRole = providerService.getProviderRole(1);
-				}
-				catch (Exception ex) {
-					// If that also fails, the test will need to handle null ProviderRole
-					// But we'll create a minimal object for the test to use
-					testProviderRole = new ProviderRole();
-					testProviderRole.setName("Test Provider Role");
-					testProviderRole.setUuid("test-provider-role-uuid");
-					// Note: This ProviderRole won't exist in DB, so resolution will fail
-					// The test may need to be adjusted to handle this case
-				}
-			}
-		}
-		
-		// Ensure testProviderRole is never null
-		if (testProviderRole == null) {
-			testProviderRole = new ProviderRole();
-			testProviderRole.setName("Test Provider Role");
-			testProviderRole.setUuid("test-provider-role-uuid");
-		}
+		assertThat("ProviderRole test fixture must load via DBUnit", testProviderRole, is(notNullValue()));
 		
 		// Mock patient reference translator
 		Reference patientRef = new Reference();
@@ -250,16 +208,10 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	
 	@Test
 	public void toCarePlan_withAssigneeProviderRoleId_shouldIncludePractitionerRoleReference() throws Exception {
-		// Skip this test if ProviderRole wasn't saved to database (can't resolve UUID)
-		org.junit.Assume.assumeTrue("ProviderRole must be saved to database for this test",
-		    testProviderRole != null && testProviderRole.getProviderRoleId() != null
-		            && providerService.getProviderRole(testProviderRole.getProviderRoleId()) != null);
-		
-		// Given: A Task with assignee_provider_role_id set
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setAssigneeProviderRoleId(testProviderRole.getProviderRoleId());
 		
 		// When: Converting Task to CarePlan
@@ -290,7 +242,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setAssignee(testProvider);
 		
 		// When: Converting Task to CarePlan
@@ -318,7 +270,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		
 		Person person = new Person();
 		PersonName personName = new PersonName();
@@ -356,7 +308,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 
 		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
 
-		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+		assertThat(result.getStatus(), is(TaskStatus.CANCELLED));
 		assertThat(result.getVoided(), is(false));
 		assertThat(result.getDateVoided(), is(nullValue()));
 	}
@@ -373,7 +325,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 
 		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
 
-		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.CANCELLED));
+		assertThat(result.getStatus(), is(TaskStatus.CANCELLED));
 		assertThat(result.getVoided(), is(true));
 		assertThat(result.getDateVoided(), is(existingDate));
 	}
@@ -383,7 +335,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setVoided(true);
 		task.setDateVoided(new java.util.Date());
 
@@ -401,7 +353,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setVoided(false);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
@@ -417,7 +369,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withCancelledStatusNonVoidedTask_shouldPassCancelledThrough() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		task.setStatus(TaskStatus.CANCELLED);
 		task.setVoided(false);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
@@ -554,7 +506,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("High priority task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setPriority(Priority.HIGH);
 		
 		// When: Converting Task to CarePlan
@@ -580,7 +532,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Medium priority task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setPriority(Priority.MEDIUM);
 		
 		// When: Converting Task to CarePlan
@@ -606,7 +558,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Low priority task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setPriority(Priority.LOW);
 		
 		// When: Converting Task to CarePlan
@@ -632,7 +584,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Task without priority");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setPriority(null);
 		
 		// When: Converting Task to CarePlan
@@ -724,7 +676,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.THIS_VISIT);
 		task.setDueDateReferenceVisit(currentVisit);
 		
@@ -766,7 +718,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(currentVisit);
 		
@@ -814,7 +766,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.THIS_VISIT);
 		task.setDueDateReferenceVisit(endedVisit);
 		
@@ -887,7 +839,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(firstVisit); // Task was created during first visit
 		
@@ -940,7 +892,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(lastVisit);
 		
@@ -999,7 +951,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test task");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(lastVisit); // Task was created during last visit
 		
@@ -1102,8 +1054,8 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		existing.setRationale("prior rationale");
 		existing.setPriority(Priority.HIGH);
 		existing.setDescription("prior description");
-		existing.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		existing.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		existing.setStatus(TaskStatus.NOTSTARTED);
+		existing.setKind(TaskKind.APPOINTMENT);
 		
 		CarePlan incoming = new CarePlan();
 		Reference patientRef = new Reference();
@@ -1128,7 +1080,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withCancelledStatus_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.CANCELLED);
+		task.setStatus(TaskStatus.CANCELLED);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1139,7 +1091,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withStoppedStatus_shouldMapToRevokedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.STOPPED);
+		task.setStatus(TaskStatus.STOPPED);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1150,7 +1102,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withOnHoldStatus_shouldMapToOnHoldCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.ONHOLD);
+		task.setStatus(TaskStatus.ONHOLD);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1161,7 +1113,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withEnteredInErrorStatus_shouldMapToEnteredInErrorCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.ENTEREDINERROR);
+		task.setStatus(TaskStatus.ENTEREDINERROR);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1172,7 +1124,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withInProgressStatus_shouldMapToActiveCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.INPROGRESS);
+		task.setStatus(TaskStatus.INPROGRESS);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1183,7 +1135,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withCompletedStatus_shouldMapToCompletedCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.COMPLETED);
+		task.setStatus(TaskStatus.COMPLETED);
 		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 		
@@ -1194,7 +1146,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void toCarePlan_withVoidedTask_shouldMapToEnteredInErrorCarePlanStatus() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setVoided(true);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
@@ -1218,7 +1170,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task result = carePlanMapper.applyCarePlanToTask(task, carePlan, testPatient, null, null);
 		
 		assertThat(result.getVoided(), is(true));
-		assertThat(result.getStatus(), is(CarePlan.CarePlanActivityStatus.INPROGRESS));
+		assertThat(result.getStatus(), is(TaskStatus.INPROGRESS));
 	}
 	
 	// Note: scheduled[x] of type DateTime / Date is not a valid FHIR R4 choice for
@@ -1263,8 +1215,8 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task original = new Task();
 		original.setPatient(testPatient);
 		original.setDescription("round-trip description");
-		original.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
-		original.setKind(CarePlan.CarePlanActivityKind.APPOINTMENT);
+		original.setStatus(TaskStatus.NOTSTARTED);
+		original.setKind(TaskKind.APPOINTMENT);
 		original.setPriority(Priority.HIGH);
 		Date due = new Date(1700000000000L);
 		original.setDueDate(due);
@@ -1276,8 +1228,8 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task roundTripped = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
 		
 		assertThat(roundTripped.getDescription(), is("round-trip description"));
-		assertThat(roundTripped.getStatus(), is(CarePlan.CarePlanActivityStatus.NOTSTARTED));
-		assertThat(roundTripped.getKind(), is(CarePlan.CarePlanActivityKind.APPOINTMENT));
+		assertThat(roundTripped.getStatus(), is(TaskStatus.NOTSTARTED));
+		assertThat(roundTripped.getKind(), is(TaskKind.APPOINTMENT));
 		assertThat(roundTripped.getPriority(), is(Priority.HIGH));
 		assertThat(roundTripped.getDueDateType(), is(DueDateType.DATE));
 		assertThat(roundTripped.getDueDate(), is(due));
@@ -1288,49 +1240,49 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 
 	@Test
 	public void toCarePlan_withAppointmentKind_shouldReferenceAppointment() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.APPOINTMENT, "Appointment");
+		assertKindMapsToResourceType(TaskKind.APPOINTMENT, "Appointment");
 	}
 
 	@Test
 	public void toCarePlan_withCommunicationRequestKind_shouldReferenceCommunicationRequest() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.COMMUNICATIONREQUEST, "CommunicationRequest");
+		assertKindMapsToResourceType(TaskKind.COMMUNICATIONREQUEST, "CommunicationRequest");
 	}
 
 	@Test
 	public void toCarePlan_withDeviceRequestKind_shouldReferenceDeviceRequest() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.DEVICEREQUEST, "DeviceRequest");
+		assertKindMapsToResourceType(TaskKind.DEVICEREQUEST, "DeviceRequest");
 	}
 
 	@Test
 	public void toCarePlan_withMedicationRequestKind_shouldReferenceMedicationRequest() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.MEDICATIONREQUEST, "MedicationRequest");
+		assertKindMapsToResourceType(TaskKind.MEDICATIONREQUEST, "MedicationRequest");
 	}
 
 	@Test
 	public void toCarePlan_withNutritionOrderKind_shouldReferenceNutritionOrder() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.NUTRITIONORDER, "NutritionOrder");
+		assertKindMapsToResourceType(TaskKind.NUTRITIONORDER, "NutritionOrder");
 	}
 
 	@Test
 	public void toCarePlan_withServiceRequestKind_shouldReferenceServiceRequest() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.SERVICEREQUEST, "ServiceRequest");
+		assertKindMapsToResourceType(TaskKind.SERVICEREQUEST, "ServiceRequest");
 	}
 
 	@Test
 	public void toCarePlan_withTaskKind_shouldReferenceTask() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.TASK, "Task");
+		assertKindMapsToResourceType(TaskKind.TASK, "Task");
 	}
 
 	@Test
 	public void toCarePlan_withVisionPrescriptionKind_shouldReferenceVisionPrescription() {
-		assertKindMapsToResourceType(CarePlan.CarePlanActivityKind.VISIONPRESCRIPTION, "VisionPrescription");
+		assertKindMapsToResourceType(TaskKind.VISIONPRESCRIPTION, "VisionPrescription");
 	}
 
 	@Test
 	public void toCarePlan_withNullKind_shouldNotSetActivityReference() {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 
@@ -1338,10 +1290,10 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		assertThat(carePlan.getActivityFirstRep().hasReference(), is(false));
 	}
 
-	private void assertKindMapsToResourceType(CarePlan.CarePlanActivityKind kind, String expectedType) {
+	private void assertKindMapsToResourceType(TaskKind kind, String expectedType) {
 		Task task = new Task();
 		task.setPatient(testPatient);
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setKind(kind);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
@@ -1375,10 +1327,6 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 
 	@Test
 	public void applyCarePlanToTask_withAbsoluteUrlPractitionerRoleReference_shouldResolveRole() throws Exception {
-		org.junit.Assume.assumeTrue("ProviderRole must be saved to database for this test",
-		    testProviderRole != null && testProviderRole.getProviderRoleId() != null
-		            && providerService.getProviderRole(testProviderRole.getProviderRoleId()) != null);
-
 		CarePlan carePlan = createCarePlanWithoutPerformers();
 		Reference performer = new Reference();
 		performer.setReference("http://remote.example.org/fhir/PractitionerRole/" + testProviderRole.getUuid());
@@ -1406,7 +1354,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(onlyVisit);
 
@@ -1428,7 +1376,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(dangling);
 
@@ -1475,7 +1423,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("Test");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setDueDateType(DueDateType.NEXT_VISIT);
 		task.setDueDateReferenceVisit(firstVisit);
 
@@ -1495,7 +1443,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setDescription("task description text");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 
@@ -1507,7 +1455,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setRationale("the clinical rationale");
-		task.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		task.setStatus(TaskStatus.NOTSTARTED);
 
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
 
