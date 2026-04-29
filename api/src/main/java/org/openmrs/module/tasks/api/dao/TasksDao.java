@@ -65,7 +65,8 @@ public class TasksDao {
 		String hql = "from tasks.Task t where t.patient.patientId = :patientId and t.voided = false"
 		        + " and (t.status is null or t.status not in (:excluded))" + " order by t.dateCreated desc";
 		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId)
-		        .setParameterList("excluded", Arrays.asList(TaskStatus.CANCELLED, TaskStatus.ENTEREDINERROR)).getResultList();
+		        .setParameterList("excluded", Arrays.asList(TaskStatus.CANCELLED, TaskStatus.ENTEREDINERROR))
+		        .getResultList();
 	}
 	
 	public SystemTask getSystemTaskByUuid(String uuid) {
