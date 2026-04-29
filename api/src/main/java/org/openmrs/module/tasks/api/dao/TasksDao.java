@@ -15,10 +15,10 @@ import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hl7.fhir.r4.model.CarePlan;
 import org.openmrs.api.db.hibernate.HibernateUtil;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
+import org.openmrs.module.tasks.TaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -65,9 +65,7 @@ public class TasksDao {
 		String hql = "from tasks.Task t where t.patient.patientId = :patientId and t.voided = false"
 		        + " and (t.status is null or t.status not in (:excluded))" + " order by t.dateCreated desc";
 		return getCurrentSession().createQuery(hql, Task.class).setParameter("patientId", patientId)
-		        .setParameterList("excluded",
-		            Arrays.asList(CarePlan.CarePlanActivityStatus.CANCELLED, CarePlan.CarePlanActivityStatus.ENTEREDINERROR))
-		        .getResultList();
+		        .setParameterList("excluded", Arrays.asList(TaskStatus.CANCELLED, TaskStatus.ENTEREDINERROR)).getResultList();
 	}
 	
 	public SystemTask getSystemTaskByUuid(String uuid) {

@@ -151,8 +151,8 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 	/**
 	 * Deletes (voids) a CarePlan resource by ID. Maps to the task's underlying void operation — the
 	 * stored {@code task.status} is unchanged; voiding is tracked via {@code voided}/{@code voidedBy}
-	 * /{@code dateVoided}/{@code voidReason} and surfaced on read as {@code CarePlan.status=REVOKED} /
-	 * {@code detail.status=CANCELLED}.
+	 * /{@code dateVoided}/{@code voidReason} and surfaced on read as {@code CarePlan.status=ENTEREDINERROR}
+	 * / {@code activity.detail.status=ENTEREDINERROR}.
 	 *
 	 * @param id the CarePlan ID
 	 * @return a MethodOutcome for the deletion
