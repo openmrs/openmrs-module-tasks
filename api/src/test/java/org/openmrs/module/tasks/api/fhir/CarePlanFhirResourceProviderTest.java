@@ -40,11 +40,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -404,7 +404,7 @@ public class CarePlanFhirResourceProviderTest {
 		List<CarePlan> result = provider.search(null);
 		
 		assertThat(result, is(empty()));
-		verifyZeroInteractions(tasksService, patientService, carePlanMapper);
+		verifyNoInteractions(tasksService, patientService, carePlanMapper);
 	}
 	
 	@Test
@@ -412,7 +412,7 @@ public class CarePlanFhirResourceProviderTest {
 		List<CarePlan> result = provider.search("");
 		
 		assertThat(result, is(empty()));
-		verifyZeroInteractions(tasksService, patientService, carePlanMapper);
+		verifyNoInteractions(tasksService, patientService, carePlanMapper);
 	}
 	
 	@Test
