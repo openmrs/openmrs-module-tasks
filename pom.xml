@@ -64,6 +64,9 @@
 		<restVersion>2.50.0</restVersion>
 		<servletApiVersion>3.1.0</servletApiVersion>
 		<jsonPathVersion>2.9.0</jsonPathVersion>
+		<!-- bumped to support Java 21 build matrix; the parent POM pins older versions
+		     that fail to instrument with Mockito's inline mock maker on JDK 21 -->
+		<byteBuddyVersion>1.14.18</byteBuddyVersion>
     </properties>
 
     <dependencyManagement>
@@ -90,6 +93,18 @@
 				<groupId>com.jayway.jsonpath</groupId>
 				<artifactId>json-path</artifactId>
 				<version>${jsonPathVersion}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy</artifactId>
+				<version>${byteBuddyVersion}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy-agent</artifactId>
+				<version>${byteBuddyVersion}</version>
 				<scope>test</scope>
 			</dependency>
         </dependencies>
