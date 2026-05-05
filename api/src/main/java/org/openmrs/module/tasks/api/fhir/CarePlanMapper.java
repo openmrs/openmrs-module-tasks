@@ -345,8 +345,11 @@ public class CarePlanMapper {
 			task = new Task();
 		}
 		
-		if (carePlan.hasId()) {
-			task.setUuid(carePlan.getId());
+		if (carePlan.hasIdElement()) {
+			String idPart = carePlan.getIdElement().getIdPart();
+			if (StringUtils.isNotBlank(idPart)) {
+				task.setUuid(idPart);
+			}
 		}
 		
 		task.setPatient(patient);

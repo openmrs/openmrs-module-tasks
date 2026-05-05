@@ -44,7 +44,20 @@ The module also exposes endpoints directly at `/ws/rest/v1/tasks/careplan`:
 - **Description:** Creates a new CarePlan resource
 - **Request Body:** FHIR CarePlan resource in JSON format
 - **Response:** Returns the created CarePlan as JSON with HTTP 201 (Created)
-- **Error Response:** Returns FHIR OperationOutcome in JSON format on error
+- **Error Response:** Returns a JSON error object on error
+
+**Read CarePlan by ID**
+- **Endpoint:** `GET /ws/rest/v1/tasks/careplan/{carePlanId}`
+- **Description:** Retrieves a CarePlan by UUID
+- **Response:** Returns the CarePlan as JSON, or 404 with a JSON error object if not found
+
+**Update CarePlan**
+- **Endpoint:** `PUT /ws/rest/v1/tasks/careplan/{carePlanId}`
+- **Content-Type:** `application/json`
+- **Description:** Replaces an existing CarePlan resource. PUT is a full replace; any field absent from the payload is reset on the underlying task.
+- **Request Body:** FHIR CarePlan resource in JSON format
+- **Response:** Returns the updated CarePlan as JSON
+- **Error Response:** 404 if no CarePlan exists with the given UUID; 400 for malformed payloads or invalid references
 
 **Get CarePlans by Patient**
 - **Endpoint:** `GET /ws/rest/v1/tasks/careplan?subject=Patient/{patientId}`
@@ -52,7 +65,7 @@ The module also exposes endpoints directly at `/ws/rest/v1/tasks/careplan`:
 - **Query Parameters:**
   - `subject` (required): Patient reference in format `Patient/{patientId}`
 - **Response:** Returns a FHIR Bundle containing CarePlan resources
-- **Error Response:** Returns FHIR OperationOutcome in JSON format on error
+- **Error Response:** Returns a JSON error object on error
 
 **Note:** All endpoints require authentication as per OpenMRS security configuration. The base URL for endpoints is relative to your OpenMRS server installation (e.g., `http://localhost:8080/openmrs`).
 

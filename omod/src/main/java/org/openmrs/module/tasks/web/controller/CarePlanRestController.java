@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -77,17 +78,27 @@ public class CarePlanRestController {
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> create(@RequestBody String carePlanPayload) {
 		CarePlan carePlan = parseCarePlan(carePlanPayload);
-		
+
 		MethodOutcome outcome = carePlanFhirResourceProvider.create(carePlan);
 		CarePlan savedCarePlan = (CarePlan) outcome.getResource();
-		
+
 		HttpHeaders headers = new HttpHeaders();
 		if (outcome.getId() != null) {
 			headers.setLocation(URI.create(outcome.getId().getValue()));
 		}
-		
+
 		return ResponseEntity.status(HttpStatus.CREATED).headers(headers).contentType(MediaType.APPLICATION_JSON)
 		        .body(encodeResource(savedCarePlan));
+	}
+
+	@PutMapping(path = "/{carePlanId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<JsonNode> update(@PathVariable("carePlanId") String carePlanId, @RequestBody String carePlanPayload) {
+		CarePlan carePlan = parseCarePlan(carePlanPayload);
+
+		MethodOutcome outcome = carePlanFhirResourceProvider.update(new IdType("CarePlan", carePlanId), carePlan);
+		CarePlan savedCarePlan = (CarePlan) outcome.getResource();
+
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(savedCarePlan));
 	}
 	
 	@ExceptionHandler(ResourceNotFoundException.class)
