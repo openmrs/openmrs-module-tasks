@@ -273,19 +273,19 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		User creator = new User();
 		creator.setPerson(testProvider.getPerson());
 		creator.setUsername("testuser");
-
+		
 		Task task = new Task();
 		task.setPatient(testPatient);
 		task.setStatus(TaskStatus.NOTSTARTED);
 		task.setCreator(creator);
-
+		
 		CarePlan carePlan = carePlanMapper.toCarePlan(task);
-
+		
 		Reference author = carePlan.getAuthor();
 		assertThat(author, is(notNullValue()));
 		assertThat(author.getReference(), is("Practitioner/" + testProvider.getUuid()));
 	}
-
+	
 	@Test
 	public void toCarePlan_withCreator_shouldIncludeAuthorWithDisplay() {
 		Task task = new Task();
@@ -1540,24 +1540,24 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	public void applyCarePlanToTask_shouldNotInterpretCarePlanDescriptionAsRationale() {
 		CarePlan carePlan = createCarePlanWithoutPerformers();
 		carePlan.setDescription("plan-level summary that should NOT become rationale");
-
+		
 		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
-
+		
 		assertThat(result.getRationale(), is(nullValue()));
 	}
-
+	
 	@Test
 	public void applyCarePlanToTask_withHyphenatedActivityReferenceType_shouldResolveKind() {
 		CarePlan carePlan = createCarePlanWithoutPerformers();
 		Reference reference = new Reference();
 		reference.setType("medication-request");
 		carePlan.getActivityFirstRep().setReference(reference);
-
+		
 		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
-
+		
 		assertThat(result.getKind(), is(TaskKind.MEDICATIONREQUEST));
 	}
-
+	
 	@Test
 	public void applyCarePlanToTask_withNextVisitDueKindAndEncounterExtension_shouldSetReferenceVisit() throws Exception {
 		VisitService visitService = Context.getVisitService();
@@ -1566,24 +1566,24 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		Visit visit = createTestVisit(testPatient, cal.getTime(), null);
 		visitService.saveVisit(visit);
 		Context.flushSession();
-
+		
 		CarePlan carePlan = createCarePlanWithoutPerformers();
 		CarePlan.CarePlanActivityDetailComponent detail = carePlan.getActivityFirstRep().getDetail();
-
+		
 		Extension dueKind = new Extension();
 		dueKind.setUrl("http://openmrs.org/fhir/StructureDefinition/activity-dueKind");
 		dueKind.setValue(new org.hl7.fhir.r4.model.CodeType("next-visit"));
 		detail.addExtension(dueKind);
-
+		
 		Extension encounterExt = new Extension();
 		encounterExt.setUrl("http://hl7.org/fhir/StructureDefinition/encounter-associatedEncounter");
 		Reference encRef = new Reference();
 		encRef.setReference("Encounter/" + visit.getUuid());
 		encounterExt.setValue(encRef);
 		detail.addExtension(encounterExt);
-
+		
 		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
-
+		
 		assertThat(result.getDueDateType(), is(DueDateType.NEXT_VISIT));
 		assertThat(result.getDueDateReferenceVisit(), is(notNullValue()));
 		assertThat(result.getDueDateReferenceVisit().getUuid(), is(visit.getUuid()));

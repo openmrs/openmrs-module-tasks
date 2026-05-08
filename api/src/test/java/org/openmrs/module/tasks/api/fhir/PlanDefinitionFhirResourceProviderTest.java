@@ -329,24 +329,24 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		assertThat(found.getActionFirstRep().hasReason(), is(true));
 		assertThat(found.getActionFirstRep().getReasonFirstRep().getText(), is("Important clinical reason"));
 	}
-
+	
 	@Test
 	public void read_withDefaultAssigneeRole_shouldEmitParticipantWithCoding() throws Exception {
 		executeDataSet("datasets/ProviderRoleTestDataset.xml");
 		ProviderRole role = Context.getProviderService().getProviderRoleByUuid("test-provider-role-uuid");
 		assertThat(role, is(notNullValue()));
-
+		
 		SystemTask systemTask = new SystemTask();
 		systemTask.setName("template-with-default-role");
 		systemTask.setTitle("Template With Default Role");
 		systemTask.setDefaultAssigneeProviderRoleId(role.getProviderRoleId());
 		tasksService.saveSystemTask(systemTask);
-
+		
 		Context.flushSession();
 		Context.clearSession();
-
+		
 		PlanDefinition result = provider.read(new IdType(systemTask.getUuid()));
-
+		
 		assertThat(result, is(notNullValue()));
 		assertThat(result.hasAction(), is(true));
 		PlanDefinition.PlanDefinitionActionComponent action = result.getActionFirstRep();
