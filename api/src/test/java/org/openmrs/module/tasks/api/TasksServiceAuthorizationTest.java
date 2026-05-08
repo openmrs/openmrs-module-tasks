@@ -28,6 +28,10 @@ import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.TaskKind;
 import org.openmrs.module.tasks.TaskStatus;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -144,10 +148,10 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	public void getTaskByUuid_withViewPrivilege_shouldNotThrow() {
 		Context.logout();
 		Context.authenticate("admin", "test");
+		
 		Task task = tasksService.getTaskByUuid("does-not-exist");
-		// getTaskByUuid returns null (not throws) when the uuid doesn't match; the assertion is
-		// simply that the call succeeded without APIAuthenticationException.
-		assert task == null;
+		
+		assertThat(task, is(nullValue()));
 	}
 	
 	private User createUserWithoutTasksPrivileges() {

@@ -14,6 +14,7 @@ import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.PlanDefinition;
 import org.junit.Before;
 import org.junit.Test;
+import org.openmrs.ProviderRole;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.tasks.SystemTask;
@@ -327,5 +328,34 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 		assertThat(found.hasAction(), is(true));
 		assertThat(found.getActionFirstRep().hasReason(), is(true));
 		assertThat(found.getActionFirstRep().getReasonFirstRep().getText(), is("Important clinical reason"));
+	}
+
+	@Test
+	public void read_withDefaultAssigneeRole_shouldEmitParticipantWithCoding() throws Exception {
+		executeDataSet("datasets/ProviderRoleTestDataset.xml");
+		ProviderRole role = Context.getProviderService().getProviderRoleByUuid("test-provider-role-uuid");
+		assertThat(role, is(notNullValue()));
+
+		SystemTask systemTask = new SystemTask();
+		systemTask.setName("template-with-default-role");
+		systemTask.setTitle("Template With Default Role");
+		systemTask.setDefaultAssigneeProviderRoleId(role.getProviderRoleId());
+		tasksService.saveSystemTask(systemTask);
+
+		Context.flushSession();
+		Context.clearSession();
+
+		PlanDefinition result = provider.read(new IdType(systemTask.getUuid()));
+
+		assertThat(result, is(notNullValue()));
+		assertThat(result.hasAction(), is(true));
+		PlanDefinition.PlanDefinitionActionComponent action = result.getActionFirstRep();
+		assertThat(action.hasParticipant(), is(true));
+		PlanDefinition.PlanDefinitionActionParticipantComponent participant = action.getParticipantFirstRep();
+		assertThat(participant.getType(), is(PlanDefinition.ActionParticipantType.PRACTITIONER));
+		assertThat(participant.hasRole(), is(true));
+		assertThat(participant.getRole().getCodingFirstRep().getSystem(), is("PractitionerRole"));
+		assertThat(participant.getRole().getCodingFirstRep().getCode(), is("test-provider-role-uuid"));
+		assertThat(participant.getRole().getCodingFirstRep().getDisplay(), is("Test Provider Role"));
 	}
 }

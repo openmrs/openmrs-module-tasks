@@ -134,6 +134,26 @@ public class CarePlanFhirResourceProviderTest {
 		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
 	}
 	
+	@Test(expected = InvalidRequestException.class)
+	public void create_withNonPatientSubject_shouldThrowInvalidRequest() {
+		CarePlan carePlan = new CarePlan();
+		Reference subject = new Reference();
+		subject.setReference("Group/some-group-uuid");
+		carePlan.setSubject(subject);
+		
+		provider.create(carePlan);
+	}
+	
+	@Test(expected = InvalidRequestException.class)
+	public void create_withSubjectReferenceMissingIdPart_shouldThrowInvalidRequest() {
+		CarePlan carePlan = new CarePlan();
+		Reference subject = new Reference();
+		subject.setReference("Patient/");
+		carePlan.setSubject(subject);
+		
+		provider.create(carePlan);
+	}
+	
 	@Test
 	public void create_withResolvedPatient_shouldDelegateToMapperAndReturnOutcome() {
 		CarePlan incoming = carePlanWithSubject(PATIENT_UUID);

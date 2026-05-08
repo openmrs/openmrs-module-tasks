@@ -47,7 +47,7 @@ public interface TasksService extends OpenmrsService {
 	Task saveTask(Task task) throws APIException;
 	
 	/**
-	 * Returns all non-voided tasks for a patient.
+	 * Returns all non-voided tasks for a patient, ordered by date created (newest first).
 	 *
 	 * @param patientId the patient id
 	 * @return the non-voided tasks for the patient
@@ -57,7 +57,8 @@ public interface TasksService extends OpenmrsService {
 	List<Task> getTasksByPatientId(Integer patientId) throws APIException;
 	
 	/**
-	 * Returns tasks for a patient, optionally including voided tasks.
+	 * Returns tasks for a patient, optionally including voided tasks; ordered by date created (newest
+	 * first).
 	 *
 	 * @param patientId the patient id
 	 * @param includeVoided whether to include voided tasks in the result
@@ -68,9 +69,9 @@ public interface TasksService extends OpenmrsService {
 	List<Task> getTasksByPatientId(Integer patientId, boolean includeVoided) throws APIException;
 	
 	/**
-	 * Returns the non-voided tasks for a patient whose status is not in a definitively terminal state —
-	 * currently CANCELLED or ENTEREDINERROR. Completed and stopped tasks are still returned because
-	 * they represent legitimate history that clients may want to display.
+	 * Returns the non-voided tasks for a patient whose status is not CANCELLED or ENTEREDINERROR;
+	 * COMPLETED and STOPPED tasks are still returned because they represent legitimate history that
+	 * clients may want to display. Ordered by date created (newest first).
 	 *
 	 * @param patientId the patient id
 	 * @return active tasks for the patient

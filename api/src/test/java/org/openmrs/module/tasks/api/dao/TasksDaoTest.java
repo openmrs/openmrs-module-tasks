@@ -384,6 +384,36 @@ public class TasksDaoTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
+	public void getActiveTasksByPatientId_shouldReturnTasksOrderedByDateCreatedDescending() {
+		Patient patient = patientService.getPatient(2);
+		
+		Task older = new Task();
+		older.setDescription("older active");
+		older.setStatus(TaskStatus.NOTSTARTED);
+		older.setKind(TaskKind.APPOINTMENT);
+		older.setPatient(patient);
+		older.setDateCreated(new java.util.Date(1000000L));
+		dao.saveTask(older);
+		
+		Task newer = new Task();
+		newer.setDescription("newer active");
+		newer.setStatus(TaskStatus.INPROGRESS);
+		newer.setKind(TaskKind.APPOINTMENT);
+		newer.setPatient(patient);
+		newer.setDateCreated(new java.util.Date(2000000L));
+		dao.saveTask(newer);
+		
+		Context.flushSession();
+		Context.clearSession();
+		
+		List<Task> tasks = dao.getActiveTasksByPatientId(patient.getId());
+		
+		assertThat(tasks.size(), is(2));
+		assertThat(tasks.get(0).getDescription(), is("newer active"));
+		assertThat(tasks.get(1).getDescription(), is("older active"));
+	}
+	
+	@Test
 	public void getTasksByPatientId_shouldReturnTasksOrderedByDateCreatedDescending() {
 		Patient patient = patientService.getPatient(2);
 		

@@ -10,6 +10,7 @@
 package org.openmrs.module.tasks.web.controller;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.DataFormatException;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
@@ -56,7 +57,7 @@ public class CarePlanRestController {
 	}
 	
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<JsonNode> search(@RequestParam(name = "subject") String subject) {
+	public ResponseEntity<JsonNode> search(@RequestParam(name = "subject", required = false) String subject) {
 		List<CarePlan> carePlans = carePlanFhirResourceProvider.search(subject);
 		
 		Bundle bundle = new Bundle();
@@ -78,26 +79,27 @@ public class CarePlanRestController {
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> create(@RequestBody String carePlanPayload) {
 		CarePlan carePlan = parseCarePlan(carePlanPayload);
-
+		
 		MethodOutcome outcome = carePlanFhirResourceProvider.create(carePlan);
 		CarePlan savedCarePlan = (CarePlan) outcome.getResource();
-
+		
 		HttpHeaders headers = new HttpHeaders();
 		if (outcome.getId() != null) {
 			headers.setLocation(URI.create(outcome.getId().getValue()));
 		}
-
+		
 		return ResponseEntity.status(HttpStatus.CREATED).headers(headers).contentType(MediaType.APPLICATION_JSON)
 		        .body(encodeResource(savedCarePlan));
 	}
-
+	
 	@PutMapping(path = "/{carePlanId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<JsonNode> update(@PathVariable("carePlanId") String carePlanId, @RequestBody String carePlanPayload) {
+	public ResponseEntity<JsonNode> update(@PathVariable("carePlanId") String carePlanId,
+	        @RequestBody String carePlanPayload) {
 		CarePlan carePlan = parseCarePlan(carePlanPayload);
-
+		
 		MethodOutcome outcome = carePlanFhirResourceProvider.update(new IdType("CarePlan", carePlanId), carePlan);
 		CarePlan savedCarePlan = (CarePlan) outcome.getResource();
-
+		
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(encodeResource(savedCarePlan));
 	}
 	
@@ -107,24 +109,13 @@ public class CarePlanRestController {
 		        .body(errorNode(ex.getMessage()));
 	}
 	
-	@ExceptionHandler(InvalidRequestException.class)
-	public ResponseEntity<JsonNode> handleInvalidRequest(InvalidRequestException ex) {
-		return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorNode(ex.getMessage()));
-	}
-	
-	@ExceptionHandler(IllegalArgumentException.class)
-	public ResponseEntity<JsonNode> handleIllegalArgument(IllegalArgumentException ex) {
+	@ExceptionHandler({ InvalidRequestException.class, DataFormatException.class, IllegalArgumentException.class })
+	public ResponseEntity<JsonNode> handleBadRequest(Exception ex) {
 		return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorNode(ex.getMessage()));
 	}
 	
 	private CarePlan parseCarePlan(String payload) {
-		try {
-			IParser parser = FHIR_CONTEXT.newJsonParser();
-			return parser.parseResource(CarePlan.class, payload);
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("Invalid CarePlan payload", ex);
-		}
+		return FHIR_CONTEXT.newJsonParser().parseResource(CarePlan.class, payload);
 	}
 	
 	private JsonNode encodeResource(org.hl7.fhir.instance.model.api.IBaseResource resource) {

@@ -131,7 +131,7 @@ public class CarePlanRestControllerTest {
 		mockMvc.perform(post("/ws/rest/v1/tasks/careplan").contentType(MediaType.APPLICATION_JSON).content("{ not json"))
 		        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").exists());
 	}
-
+	
 	@Test
 	public void update_withValidPayload_shouldReturn200AndUpdatedResource() throws Exception {
 		CarePlan saved = new CarePlan();
@@ -140,23 +140,31 @@ public class CarePlanRestControllerTest {
 		outcome.setId(new IdType("CarePlan", CARE_PLAN_UUID));
 		outcome.setResource(saved);
 		when(resourceProvider.update(any(IdType.class), any(CarePlan.class))).thenReturn(outcome);
-
+		
 		String payload = FhirContext.forR4Cached().newJsonParser().encodeResourceToString(newCarePlanWithSubject());
-
-		mockMvc.perform(put("/ws/rest/v1/tasks/careplan/{id}", CARE_PLAN_UUID).contentType(MediaType.APPLICATION_JSON)
-		        .content(payload)).andExpect(status().isOk())
-		        .andExpect(jsonPath("$.resourceType").value("CarePlan")).andExpect(jsonPath("$.id").value(CARE_PLAN_UUID));
+		
+		mockMvc.perform(
+		    put("/ws/rest/v1/tasks/careplan/{id}", CARE_PLAN_UUID).contentType(MediaType.APPLICATION_JSON).content(payload))
+		        .andExpect(status().isOk()).andExpect(jsonPath("$.resourceType").value("CarePlan"))
+		        .andExpect(jsonPath("$.id").value(CARE_PLAN_UUID));
 	}
-
+	
+	@Test
+	public void update_withMalformedJson_shouldReturn400() throws Exception {
+		mockMvc.perform(put("/ws/rest/v1/tasks/careplan/{id}", CARE_PLAN_UUID).contentType(MediaType.APPLICATION_JSON)
+		        .content("{ not json")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").exists());
+	}
+	
 	@Test
 	public void update_whenCarePlanMissing_shouldReturn404() throws Exception {
 		when(resourceProvider.update(any(IdType.class), any(CarePlan.class)))
 		        .thenThrow(new ResourceNotFoundException(new IdType("CarePlan", CARE_PLAN_UUID)));
-
+		
 		String payload = FhirContext.forR4Cached().newJsonParser().encodeResourceToString(newCarePlanWithSubject());
-
-		mockMvc.perform(put("/ws/rest/v1/tasks/careplan/{id}", CARE_PLAN_UUID).contentType(MediaType.APPLICATION_JSON)
-		        .content(payload)).andExpect(status().isNotFound()).andExpect(jsonPath("$.error").exists());
+		
+		mockMvc.perform(
+		    put("/ws/rest/v1/tasks/careplan/{id}", CARE_PLAN_UUID).contentType(MediaType.APPLICATION_JSON).content(payload))
+		        .andExpect(status().isNotFound()).andExpect(jsonPath("$.error").exists());
 	}
 	
 	private static CarePlan newCarePlanWithSubject() {

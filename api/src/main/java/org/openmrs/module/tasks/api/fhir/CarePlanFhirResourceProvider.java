@@ -85,7 +85,6 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		Task savedTask = tasksService.saveTask(task);
 		CarePlan savedCarePlan = carePlanMapper.toCarePlan(savedTask);
 		
-		// Create MethodOutcome
 		MethodOutcome outcome = new MethodOutcome();
 		outcome.setId(new IdType("CarePlan", savedCarePlan.getId()));
 		outcome.setResource(savedCarePlan);
@@ -118,7 +117,6 @@ public class CarePlanFhirResourceProvider implements IResourceProvider {
 		
 		CarePlanContext context = resolveCarePlanContext(carePlan);
 		
-		// Ensure CarePlan ID matches the resource being updated
 		carePlan.setId(id.getIdPart());
 		
 		carePlanMapper.applyCarePlanToTask(existingTask, carePlan, patient, context.getAssignee(),

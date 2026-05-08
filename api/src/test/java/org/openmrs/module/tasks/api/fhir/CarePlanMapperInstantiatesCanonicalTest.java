@@ -253,4 +253,30 @@ public class CarePlanMapperInstantiatesCanonicalTest extends BaseModuleContextSe
 		assertThat(result, is(notNullValue()));
 		assertThat(result.getSystemTask(), is(nullValue()));
 	}
+	
+	@Test
+	public void applyCarePlanToTask_withMultipleCanonicals_shouldUseFirstResolvablePlanDefinition() {
+		CarePlan carePlan = new CarePlan();
+		carePlan.setStatus(CarePlan.CarePlanStatus.ACTIVE);
+		carePlan.setIntent(CarePlan.CarePlanIntent.PLAN);
+		// Earlier non-PlanDefinition entries should be skipped before we land on the real one.
+		carePlan.addInstantiatesCanonical("ActivityDefinition/ignored-uuid");
+		carePlan.addInstantiatesCanonical("PlanDefinition/" + testSystemTask.getUuid());
+		
+		Reference patientRef = new Reference();
+		patientRef.setReference("Patient/" + testPatient.getUuid());
+		carePlan.setSubject(patientRef);
+		
+		CarePlan.CarePlanActivityComponent activity = new CarePlan.CarePlanActivityComponent();
+		CarePlan.CarePlanActivityDetailComponent detail = new CarePlan.CarePlanActivityDetailComponent();
+		detail.setStatus(CarePlan.CarePlanActivityStatus.NOTSTARTED);
+		detail.setDescription("Task from FHIR");
+		activity.setDetail(detail);
+		carePlan.addActivity(activity);
+		
+		Task result = carePlanMapper.applyCarePlanToTask(new Task(), carePlan, testPatient, null, null);
+		
+		assertThat(result.getSystemTask(), is(notNullValue()));
+		assertThat(result.getSystemTask().getUuid(), is(testSystemTask.getUuid()));
+	}
 }
