@@ -55,6 +55,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -242,7 +243,7 @@ public class CarePlanMapper {
 		if (task.getPriority() != null) {
 			Extension priorityExtension = new Extension();
 			priorityExtension.setUrl(ACTIVITY_PRIORITY_EXTENSION_URL);
-			priorityExtension.setValue(new CodeType(task.getPriority().name().toLowerCase()));
+			priorityExtension.setValue(new CodeType(task.getPriority().name().toLowerCase(Locale.ROOT)));
 			detail.addExtension(priorityExtension);
 		}
 		
@@ -424,7 +425,7 @@ public class CarePlanMapper {
 				
 				if (priorityValue != null) {
 					try {
-						task.setPriority(Priority.valueOf(priorityValue.toUpperCase()));
+						task.setPriority(Priority.valueOf(priorityValue.toUpperCase(Locale.ROOT)));
 					}
 					catch (IllegalArgumentException e) {
 						log.warn("Unknown priority value: {}", priorityValue);
