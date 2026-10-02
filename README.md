@@ -71,7 +71,7 @@ The module also exposes endpoints directly at `/ws/rest/v1/tasks/careplan`:
 
 Building from Source
 --------------------
-You will need to have Java 8+ and Maven 3.x+ installed.  Use the command 'mvn package' to 
+You will need to have Java 21+ and Maven 3.x+ installed.  Use the command 'mvn package' to 
 compile and package the module.  The .omod file will be in the omod/target folder.
 
 Alternatively you can add the snippet provided in the [Creating Modules](https://wiki.openmrs.org/x/cAEr) page to your 

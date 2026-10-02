@@ -9,7 +9,7 @@
 
 	<groupId>org.openmrs.module</groupId>
 	<artifactId>tasks</artifactId>
-	<version>2.2.0-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Tasks</name>
 	<description>Provides backend for the Task List feature in O3 via a FHIR API. Loads System Tasks at server startup time. Provides logic for CDS-driven tasks.</description>
@@ -59,18 +59,25 @@
 	</pluginRepositories>
 
     <properties>
-        <openmrsPlatformVersion>2.8.0</openmrsPlatformVersion>
-        <fhir2Version>2.8.0</fhir2Version>
-		<restVersion>2.50.0</restVersion>
-		<servletApiVersion>3.1.0</servletApiVersion>
+        <openmrsPlatformVersion>3.0.0-SNAPSHOT</openmrsPlatformVersion>
+		<!-- keep the code formatter of the 2.x line so that spotless does not reformat untouched code -->
+		<openmrsPlatformToolsVersion>2.8.0</openmrsPlatformToolsVersion>
+		<maven.compiler.release>21</maven.compiler.release>
+		<maven.compiler.parameters>true</maven.compiler.parameters>
+        <fhir2Version>6.0.0-SNAPSHOT</fhir2Version>
+		<restVersion>5.0.0-SNAPSHOT</restVersion>
 		<jsonPathVersion>2.9.0</jsonPathVersion>
-		<!-- bumped to support Java 21 build matrix; the parent POM pins older versions
-		     that fail to instrument with Mockito's inline mock maker on JDK 21 -->
-		<byteBuddyVersion>1.14.18</byteBuddyVersion>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+			<dependency>
+				<groupId>org.openmrs</groupId>
+				<artifactId>openmrs-bom</artifactId>
+				<version>${openmrsPlatformVersion}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
             <dependency>
                 <groupId>org.openmrs.module</groupId>
                 <artifactId>fhir2-api</artifactId>
@@ -84,27 +91,9 @@
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
-				<groupId>javax.servlet</groupId>
-				<artifactId>javax.servlet-api</artifactId>
-				<version>${servletApiVersion}</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
 				<groupId>com.jayway.jsonpath</groupId>
 				<artifactId>json-path</artifactId>
 				<version>${jsonPathVersion}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>net.bytebuddy</groupId>
-				<artifactId>byte-buddy</artifactId>
-				<version>${byteBuddyVersion}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>net.bytebuddy</groupId>
-				<artifactId>byte-buddy-agent</artifactId>
-				<version>${byteBuddyVersion}</version>
 				<scope>test</scope>
 			</dependency>
         </dependencies>

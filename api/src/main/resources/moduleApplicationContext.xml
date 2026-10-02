@@ -83,10 +83,4 @@
         <property name="tasksService" ref="tasks.TasksService" />
         <property name="planDefinitionMapper" ref="tasks.PlanDefinitionMapper" />
     </bean>
-
-    <!-- Cache interceptor for FHIR2 module compatibility -->
-    <!-- FHIR2 module requires this bean to be available. Using a no-op implementation. -->
-    <bean id="cacheInterceptor" class="org.springframework.aop.interceptor.SimpleTraceInterceptor">
-        <property name="loggerName" value="org.openmrs.module.fhir2"/>
-    </bean>
 </beans>

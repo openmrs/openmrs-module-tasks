@@ -11,9 +11,9 @@ package org.openmrs.module.tasks.api;
 
 import java.util.Properties;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
@@ -28,11 +28,12 @@ import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.TaskKind;
 import org.openmrs.module.tasks.TaskStatus;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -69,7 +70,7 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 	
 	private Patient seedPatient;
 	
-	@Before
+	@BeforeEach
 	public void loginAsLowPrivilegeUser() {
 		seedPatient = patientService.getPatient(2);
 		lowPrivilegeUser = createUserWithoutTasksPrivileges();
@@ -77,71 +78,93 @@ public class TasksServiceAuthorizationTest extends BaseModuleContextSensitiveTes
 		Context.authenticate(LOW_PRIVILEGE_USERNAME, LOW_PRIVILEGE_PASSWORD);
 	}
 	
-	@After
+	@AfterEach
 	public void restoreAuthentication() {
 		Context.logout();
 		Context.authenticate("admin", "test");
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getTaskByUuid_withoutViewPrivilege_shouldThrow() {
-		tasksService.getTaskByUuid("any-uuid");
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getTaskByUuid("any-uuid");
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getTasksByPatientId_withoutViewPrivilege_shouldThrow() {
-		tasksService.getTasksByPatientId(2);
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getTasksByPatientId(2);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getTasksByPatientIdIncludeVoided_withoutViewPrivilege_shouldThrow() {
-		tasksService.getTasksByPatientId(2, true);
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getTasksByPatientId(2, true);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getActiveTasksByPatientId_withoutViewPrivilege_shouldThrow() {
-		tasksService.getActiveTasksByPatientId(2);
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getActiveTasksByPatientId(2);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void saveTask_withoutManagePrivilege_shouldThrow() {
-		Task task = new Task();
-		task.setPatient(seedPatient);
-		task.setStatus(TaskStatus.NOTSTARTED);
-		task.setKind(TaskKind.APPOINTMENT);
-		tasksService.saveTask(task);
+		assertThrows(APIAuthenticationException.class, () -> {
+			Task task = new Task();
+			task.setPatient(seedPatient);
+			task.setStatus(TaskStatus.NOTSTARTED);
+			task.setKind(TaskKind.APPOINTMENT);
+			tasksService.saveTask(task);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void voidTask_withoutDeletePrivilege_shouldThrow() {
-		Task task = new Task();
-		tasksService.voidTask(task, "reason");
+		assertThrows(APIAuthenticationException.class, () -> {
+			Task task = new Task();
+			tasksService.voidTask(task, "reason");
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void purgeTask_withoutDeletePrivilege_shouldThrow() {
-		Task task = new Task();
-		tasksService.purgeTask(task);
+		assertThrows(APIAuthenticationException.class, () -> {
+			Task task = new Task();
+			tasksService.purgeTask(task);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getSystemTaskByUuid_withoutViewPrivilege_shouldThrow() {
-		tasksService.getSystemTaskByUuid("any-uuid");
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getSystemTaskByUuid("any-uuid");
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void getAllSystemTasks_withoutViewPrivilege_shouldThrow() {
-		tasksService.getAllSystemTasks(false);
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.getAllSystemTasks(false);
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void saveSystemTask_withoutManagePrivilege_shouldThrow() {
-		tasksService.saveSystemTask(new SystemTask());
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.saveSystemTask(new SystemTask());
+		});
 	}
 	
-	@Test(expected = APIAuthenticationException.class)
+	@Test
 	public void retireSystemTask_withoutManagePrivilege_shouldThrow() {
-		tasksService.retireSystemTask(new SystemTask(), "reason");
+		assertThrows(APIAuthenticationException.class, () -> {
+			tasksService.retireSystemTask(new SystemTask(), "reason");
+		});
 	}
 	
 	@Test

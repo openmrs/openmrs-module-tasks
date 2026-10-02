@@ -12,10 +12,12 @@ package org.openmrs.module.tasks.api.fhir;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Reference;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
@@ -35,8 +37,9 @@ import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.TaskKind;
 import org.openmrs.module.tasks.TaskStatus;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 import java.util.Properties;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -58,6 +61,7 @@ import java.util.List;
  * PractitionerRole references. Tests that FHIR requests correctly set assignee_provider_id and
  * assignee_provider_role_id database columns.
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	
 	@Override
@@ -86,7 +90,7 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 	
 	private ProviderService providerService;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 		
@@ -1025,9 +1029,11 @@ public class CarePlanMapperTest extends BaseModuleContextSensitiveTest {
 		return visit;
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void toCarePlan_withNullTask_shouldThrow() {
-		carePlanMapper.toCarePlan(null);
+		assertThrows(IllegalArgumentException.class, () -> {
+			carePlanMapper.toCarePlan(null);
+		});
 	}
 	
 	@Test

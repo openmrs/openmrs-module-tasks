@@ -15,8 +15,8 @@ import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Reference;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -81,7 +82,7 @@ public class CarePlanFhirResourceProviderTest {
 	
 	private Provider testProvider;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
 		
@@ -106,52 +107,62 @@ public class CarePlanFhirResourceProviderTest {
 	
 	// ---------- create ----------
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void create_withoutPatientReference_shouldThrow() {
-		CarePlan carePlan = new CarePlan();
-		
-		provider.create(carePlan);
+		assertThrows(InvalidRequestException.class, () -> {
+			CarePlan carePlan = new CarePlan();
+			
+			provider.create(carePlan);
+		});
 	}
 	
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void create_withUnknownPatient_shouldThrowResourceNotFound() {
-		CarePlan carePlan = carePlanWithSubject(PATIENT_UUID);
-		when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(null);
-		
-		provider.create(carePlan);
+		assertThrows(ResourceNotFoundException.class, () -> {
+			CarePlan carePlan = carePlanWithSubject(PATIENT_UUID);
+			when(patientService.getPatientByUuid(PATIENT_UUID)).thenReturn(null);
+			
+			provider.create(carePlan);
+		});
 	}
 	
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void update_withUnknownPatientInPayload_shouldThrowResourceNotFound() {
-		Task existing = new Task();
-		existing.setUuid(CARE_PLAN_UUID);
-		existing.setPatient(testPatient);
-		CarePlan incoming = carePlanWithSubject("unknown-patient-uuid");
-		
-		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(existing);
-		when(patientService.getPatientByUuid("unknown-patient-uuid")).thenReturn(null);
-		
-		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
+		assertThrows(ResourceNotFoundException.class, () -> {
+			Task existing = new Task();
+			existing.setUuid(CARE_PLAN_UUID);
+			existing.setPatient(testPatient);
+			CarePlan incoming = carePlanWithSubject("unknown-patient-uuid");
+			
+			when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(existing);
+			when(patientService.getPatientByUuid("unknown-patient-uuid")).thenReturn(null);
+			
+			provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
+		});
 	}
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void create_withNonPatientSubject_shouldThrowInvalidRequest() {
-		CarePlan carePlan = new CarePlan();
-		Reference subject = new Reference();
-		subject.setReference("Group/some-group-uuid");
-		carePlan.setSubject(subject);
-		
-		provider.create(carePlan);
+		assertThrows(InvalidRequestException.class, () -> {
+			CarePlan carePlan = new CarePlan();
+			Reference subject = new Reference();
+			subject.setReference("Group/some-group-uuid");
+			carePlan.setSubject(subject);
+			
+			provider.create(carePlan);
+		});
 	}
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void create_withSubjectReferenceMissingIdPart_shouldThrowInvalidRequest() {
-		CarePlan carePlan = new CarePlan();
-		Reference subject = new Reference();
-		subject.setReference("Patient/");
-		carePlan.setSubject(subject);
-		
-		provider.create(carePlan);
+		assertThrows(InvalidRequestException.class, () -> {
+			CarePlan carePlan = new CarePlan();
+			Reference subject = new Reference();
+			subject.setReference("Patient/");
+			carePlan.setSubject(subject);
+			
+			provider.create(carePlan);
+		});
 	}
 	
 	@Test
@@ -265,21 +276,27 @@ public class CarePlanFhirResourceProviderTest {
 	
 	// ---------- update ----------
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void update_withNullId_shouldThrow() {
-		provider.update(null, new CarePlan());
+		assertThrows(InvalidRequestException.class, () -> {
+			provider.update(null, new CarePlan());
+		});
 	}
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void update_withBlankId_shouldThrow() {
-		provider.update(new IdType("CarePlan", ""), new CarePlan());
+		assertThrows(InvalidRequestException.class, () -> {
+			provider.update(new IdType("CarePlan", ""), new CarePlan());
+		});
 	}
 	
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void update_whenTaskNotFound_shouldThrowResourceNotFound() {
-		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
-		
-		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), carePlanWithSubject(PATIENT_UUID));
+		assertThrows(ResourceNotFoundException.class, () -> {
+			when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
+			
+			provider.update(new IdType("CarePlan", CARE_PLAN_UUID), carePlanWithSubject(PATIENT_UUID));
+		});
 	}
 	
 	@Test
@@ -302,16 +319,18 @@ public class CarePlanFhirResourceProviderTest {
 		verify(carePlanMapper).applyCarePlanToTask(eq(existing), eq(incoming), eq(testPatient), any(), any());
 	}
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void update_withoutPatientInPayloadOrExisting_shouldThrow() {
-		Task existing = new Task();
-		existing.setUuid(CARE_PLAN_UUID);
-		// existing has no patient
-		CarePlan incoming = new CarePlan();
-		
-		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(existing);
-		
-		provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
+		assertThrows(InvalidRequestException.class, () -> {
+			Task existing = new Task();
+			existing.setUuid(CARE_PLAN_UUID);
+			// existing has no patient
+			CarePlan incoming = new CarePlan();
+			
+			when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(existing);
+			
+			provider.update(new IdType("CarePlan", CARE_PLAN_UUID), incoming);
+		});
 	}
 	
 	@Test
@@ -351,11 +370,13 @@ public class CarePlanFhirResourceProviderTest {
 		assertThat(result, is(sameInstance(expected)));
 	}
 	
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void read_whenTaskNotFound_shouldThrowResourceNotFound() {
-		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
-		
-		provider.read(new IdType("CarePlan", CARE_PLAN_UUID));
+		assertThrows(ResourceNotFoundException.class, () -> {
+			when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
+			
+			provider.read(new IdType("CarePlan", CARE_PLAN_UUID));
+		});
 	}
 	
 	@Test
@@ -373,21 +394,27 @@ public class CarePlanFhirResourceProviderTest {
 	
 	// ---------- delete ----------
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void delete_withNullId_shouldThrow() {
-		provider.delete(null);
+		assertThrows(InvalidRequestException.class, () -> {
+			provider.delete(null);
+		});
 	}
 	
-	@Test(expected = InvalidRequestException.class)
+	@Test
 	public void delete_withBlankId_shouldThrow() {
-		provider.delete(new IdType("CarePlan", ""));
+		assertThrows(InvalidRequestException.class, () -> {
+			provider.delete(new IdType("CarePlan", ""));
+		});
 	}
 	
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void delete_whenTaskNotFound_shouldThrowResourceNotFound() {
-		when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
-		
-		provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
+		assertThrows(ResourceNotFoundException.class, () -> {
+			when(tasksService.getTaskByUuid(CARE_PLAN_UUID)).thenReturn(null);
+			
+			provider.delete(new IdType("CarePlan", CARE_PLAN_UUID));
+		});
 	}
 	
 	@Test

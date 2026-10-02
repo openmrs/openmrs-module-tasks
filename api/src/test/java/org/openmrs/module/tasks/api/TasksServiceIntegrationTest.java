@@ -17,14 +17,14 @@ import java.util.Properties;
 
 import org.openmrs.module.tasks.TaskKind;
 import org.openmrs.module.tasks.TaskStatus;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.openmrs.Patient;
 import org.openmrs.User;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**

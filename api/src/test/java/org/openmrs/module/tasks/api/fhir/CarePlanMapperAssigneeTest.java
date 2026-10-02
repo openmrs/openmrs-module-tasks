@@ -11,10 +11,12 @@ package org.openmrs.module.tasks.api.fhir;
 
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.Reference;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.openmrs.Patient;
 import org.openmrs.Provider;
 import org.openmrs.ProviderRole;
@@ -25,7 +27,7 @@ import org.openmrs.module.fhir2.api.translators.PatientReferenceTranslator;
 import org.openmrs.module.fhir2.api.translators.PractitionerReferenceTranslator;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.dao.TasksDao;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -40,6 +42,7 @@ import java.util.Properties;
  * Integration test that verifies FHIR CarePlan requests correctly set assignee_provider_id and
  * assignee_provider_role_id database columns when creating tasks.
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CarePlanMapperAssigneeTest extends BaseModuleContextSensitiveTest {
 	
 	@Override
@@ -71,7 +74,7 @@ public class CarePlanMapperAssigneeTest extends BaseModuleContextSensitiveTest {
 	
 	private ProviderService providerService;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 		
