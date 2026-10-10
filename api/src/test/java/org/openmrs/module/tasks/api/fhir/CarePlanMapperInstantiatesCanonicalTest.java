@@ -11,10 +11,12 @@ package org.openmrs.module.tasks.api.fhir;
 
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.Reference;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.openmrs.Patient;
 import org.openmrs.Provider;
 import org.openmrs.api.PatientService;
@@ -27,7 +29,7 @@ import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.TaskStatus;
 import org.openmrs.module.tasks.api.TasksService;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Properties;
@@ -43,6 +45,7 @@ import static org.mockito.Mockito.when;
  * Tests for CarePlanMapper's instantiatesCanonical handling. Verifies that tasks created from
  * system task templates correctly include the PlanDefinition reference in the CarePlan.
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CarePlanMapperInstantiatesCanonicalTest extends BaseModuleContextSensitiveTest {
 	
 	@Override
@@ -67,7 +70,7 @@ public class CarePlanMapperInstantiatesCanonicalTest extends BaseModuleContextSe
 	
 	private SystemTask testSystemTask;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 		

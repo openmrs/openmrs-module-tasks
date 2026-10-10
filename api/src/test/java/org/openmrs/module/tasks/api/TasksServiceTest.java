@@ -11,8 +11,8 @@ package org.openmrs.module.tasks.api;
 
 import org.openmrs.module.tasks.TaskKind;
 import org.openmrs.module.tasks.TaskStatus;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -21,6 +21,7 @@ import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.Task;
 import org.openmrs.module.tasks.api.dao.TasksDao;
 import org.openmrs.module.tasks.api.impl.TasksServiceImpl;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -43,7 +44,7 @@ public class TasksServiceTest {
 	@Mock
 	TasksDao dao;
 	
-	@Before
+	@BeforeEach
 	public void setupMocks() {
 		MockitoAnnotations.initMocks(this);
 	}
@@ -148,24 +149,32 @@ public class TasksServiceTest {
 		verify(dao).saveTask(task);
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void voidTask_withNullTask_shouldThrow() {
-		tasksService.voidTask(null, "reason");
+		assertThrows(APIException.class, () -> {
+			tasksService.voidTask(null, "reason");
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void voidTask_withNullReason_shouldThrow() {
-		tasksService.voidTask(new Task(), null);
+		assertThrows(APIException.class, () -> {
+			tasksService.voidTask(new Task(), null);
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void voidTask_withEmptyReason_shouldThrow() {
-		tasksService.voidTask(new Task(), "");
+		assertThrows(APIException.class, () -> {
+			tasksService.voidTask(new Task(), "");
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void voidTask_withWhitespaceReason_shouldThrow() {
-		tasksService.voidTask(new Task(), "   ");
+		assertThrows(APIException.class, () -> {
+			tasksService.voidTask(new Task(), "   ");
+		});
 	}
 	
 	@Test
@@ -180,9 +189,11 @@ public class TasksServiceTest {
 		verify(dao).deleteTask(task);
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void purgeTask_withNullTask_shouldThrow() {
-		tasksService.purgeTask(null);
+		assertThrows(APIException.class, () -> {
+			tasksService.purgeTask(null);
+		});
 	}
 	
 	@Test
@@ -234,23 +245,31 @@ public class TasksServiceTest {
 		verify(dao).saveSystemTask(systemTask);
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void retireSystemTask_withNullSystemTask_shouldThrow() {
-		tasksService.retireSystemTask(null, "reason");
+		assertThrows(APIException.class, () -> {
+			tasksService.retireSystemTask(null, "reason");
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void retireSystemTask_withNullReason_shouldThrow() {
-		tasksService.retireSystemTask(new SystemTask(), null);
+		assertThrows(APIException.class, () -> {
+			tasksService.retireSystemTask(new SystemTask(), null);
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void retireSystemTask_withEmptyReason_shouldThrow() {
-		tasksService.retireSystemTask(new SystemTask(), "");
+		assertThrows(APIException.class, () -> {
+			tasksService.retireSystemTask(new SystemTask(), "");
+		});
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void retireSystemTask_withWhitespaceReason_shouldThrow() {
-		tasksService.retireSystemTask(new SystemTask(), "   ");
+		assertThrows(APIException.class, () -> {
+			tasksService.retireSystemTask(new SystemTask(), "   ");
+		});
 	}
 }

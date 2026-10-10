@@ -9,9 +9,9 @@
  */
 package org.openmrs.module.tasks.api.dao;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -40,12 +40,11 @@ public class TasksDao {
 	}
 	
 	public Task saveTask(Task task) {
-		getCurrentSession().saveOrUpdate(task);
-		return task;
+		return HibernateUtil.saveOrUpdate(getCurrentSession(), task);
 	}
 	
 	public void deleteTask(Task task) {
-		getCurrentSession().delete(task);
+		getCurrentSession().remove(task);
 	}
 	
 	public List<Task> getTasksByPatientId(Integer patientId) {
@@ -89,7 +88,6 @@ public class TasksDao {
 	}
 	
 	public SystemTask saveSystemTask(SystemTask systemTask) {
-		getCurrentSession().saveOrUpdate(systemTask);
-		return systemTask;
+		return HibernateUtil.saveOrUpdate(getCurrentSession(), systemTask);
 	}
 }

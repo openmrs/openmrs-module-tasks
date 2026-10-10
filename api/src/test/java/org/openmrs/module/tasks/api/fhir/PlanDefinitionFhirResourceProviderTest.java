@@ -12,14 +12,14 @@ package org.openmrs.module.tasks.api.fhir;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.PlanDefinition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openmrs.ProviderRole;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.tasks.SystemTask;
 import org.openmrs.module.tasks.api.TasksService;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.openmrs.test.jupiter.BaseModuleContextSensitiveTest;
 
 import java.util.List;
 import java.util.Properties;
@@ -51,7 +51,7 @@ public class PlanDefinitionFhirResourceProviderTest extends BaseModuleContextSen
 	
 	private PlanDefinitionMapper mapper;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		tasksService = Context.getService(TasksService.class);
 		mapper = new PlanDefinitionMapper();

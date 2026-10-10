@@ -11,8 +11,8 @@ package org.openmrs.module.tasks.api.fhir;
 
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.PlanDefinition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openmrs.module.tasks.Priority;
 import org.openmrs.module.tasks.SystemTask;
 
@@ -30,7 +30,7 @@ public class PlanDefinitionMapperTest {
 	
 	private PlanDefinitionMapper mapper;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		mapper = new PlanDefinitionMapper();
 	}
